@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/prashanth-manchikatla/Hoverbird/discussions/categories/q-a
+    about: How do I…? Is this expected? Ask the community.
+  - name: Share an idea
+    url: https://github.com/prashanth-manchikatla/Hoverbird/discussions/categories/ideas
+    about: Early ideas and wishes — discuss them before they become issues.
+  - name: Report a security vulnerability
+    url: https://github.com/prashanth-manchikatla/Hoverbird/security/advisories/new
+    about: Please report security problems privately.
