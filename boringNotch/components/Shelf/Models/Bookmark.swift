@@ -20,12 +20,18 @@ struct Bookmark: Sendable, Equatable, Codable {
             throw NSError(domain: "Bookmark", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not a valid file URL or file does not exist at \(url.path)"])
         }
         do {
-            let bookmark = try url.bookmarkData(
+            // Hoverbird runs un-sandboxed: security-scoped bookmarks may be
+            // unavailable, so fall back to a regular bookmark.
+            let bookmark: Data
+            if let scoped = try? url.bookmarkData(
                 options: .withSecurityScope,
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
-            )
-            NSLog("✅ Successfully created bookmark for \(url.path)")
+            ) {
+                bookmark = scoped
+            } else {
+                bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+            }
             self.data = bookmark
         } catch {
             NSLog("❌ Failed to create bookmark for \(url.path): \(error.localizedDescription)")
@@ -37,13 +43,18 @@ struct Bookmark: Sendable, Equatable, Codable {
         guard !data.isEmpty else { return (nil, nil) }
         var isStale = false
         do {
-            let url = try URL(
+            let url: URL
+            if let scoped = try? URL(
                 resolvingBookmarkData: data,
                 options: [.withSecurityScope],
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
-            )
-            if isStale, let newData = try? url.bookmarkData(options: [.withSecurityScope]) {
+            ) {
+                url = scoped
+            } else {
+                url = try URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &isStale)
+            }
+            if isStale, let newData = (try? url.bookmarkData(options: [.withSecurityScope])) ?? (try? url.bookmarkData(options: [])) {
                 NSLog("⚠️ Bookmark was stale for \(url.path), refreshed")
                 return (url, newData)
             }

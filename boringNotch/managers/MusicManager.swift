@@ -29,7 +29,21 @@ class MusicManager: ObservableObject {
     private var activeController: (any MediaControllerProtocol)?
 
     // Published properties for UI
-    @Published var songTitle: String = "I'm Handsome"
+    @Published var songTitle: String = "I'm Handsome" {
+        didSet { if oldValue != songTitle { skipPending = false } }
+    }
+    /// Hoverbird: a Next/Previous press is on its way (shows a spinner until the track changes).
+    @Published var skipPending: Bool = false
+    private var skipPendingTask: Task<Void, Never>?
+
+    private func markSkipPending() {
+        skipPending = true
+        skipPendingTask?.cancel()
+        skipPendingTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            if !Task.isCancelled { self?.skipPending = false }
+        }
+    }
     @Published var artistName: String = "Me"
     @Published var albumArt: NSImage = defaultImage
     @Published var isPlaying = false
@@ -593,6 +607,14 @@ class MusicManager: ObservableObject {
     }
 
     // MARK: - Public Methods for controlling playback
+    /// Something is playing (or was paused a moment ago). Otherwise Home shows "Not Playing"
+    /// instead of the last track's artwork and title.
+    var hasActiveMedia: Bool {
+        if isPlaying { return true }
+        guard let id = bundleIdentifier, !id.isEmpty, !songTitle.isEmpty else { return false }
+        return !isPlayerIdle
+    }
+
     func playPause() {
         Task {
             await activeController?.togglePlay()
@@ -630,12 +652,14 @@ class MusicManager: ObservableObject {
     }
 
     func nextTrack() {
+        markSkipPending()
         Task {
             await activeController?.nextTrack()
         }
     }
 
     func previousTrack() {
+        markSkipPending()
         Task {
             await activeController?.previousTrack()
         }

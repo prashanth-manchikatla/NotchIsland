@@ -28,7 +28,7 @@ class SparkleNSView: NSView {
         emitterLayer.renderMode = .oldestFirst
         
         let cell = CAEmitterCell()
-        cell.contents = NSImage(named: "sparkle")?.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        cell.contents = NSImage(systemSymbolName: "sparkle", accessibilityDescription: nil)?.cgImage(forProposedRect: nil, context: nil, hints: nil)
         cell.birthRate = 50
         cell.lifetime = 5
         cell.velocity = 10

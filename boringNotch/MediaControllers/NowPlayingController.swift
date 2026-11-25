@@ -119,28 +119,185 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     }
 
     // MARK: - Protocol Implementation
-    func play() async {
-        MRMediaRemoteSendCommandFunction(0, nil)
+    // Hoverbird: since macOS 15.4 MediaRemote ignores commands from ordinary apps,
+    // so commands go through the bundled adapter (run by Apple's signed /usr/bin/perl),
+    // falling back to the in-process call if the adapter is unavailable.
+    private func adapter(_ args: [String]) -> Bool {
+        guard let scriptURL = Bundle.main.url(forResource: "mediaremote-adapter", withExtension: "pl"),
+              let frameworkPath = Bundle.main.privateFrameworksPath?.appending("/MediaRemoteAdapter.framework") else {
+            return false
+        }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+        process.arguments = [scriptURL.path, frameworkPath] + args
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            return true
+        } catch {
+            return false
+        }
     }
 
-    func pause() async {
-        MRMediaRemoteSendCommandFunction(1, nil)
+    private func send(_ command: Int) {
+        if !adapter(["send", "\(command)"]) { MRMediaRemoteSendCommandFunction(command, nil) }
     }
 
-    func togglePlay() async {
-        MRMediaRemoteSendCommandFunction(2, nil)
+    func play() async { send(0) }
+
+    func pause() async { send(1) }
+
+    func togglePlay() async { send(2) }
+
+    /// Apps that ignore system next/previous (remembered), so we act instantly next time.
+    private static var appsIgnoringSkip: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "Hoverbird.appsIgnoringSkip") ?? [])
+    private var skipInFlightUntil: Date = .distantPast
+
+    private func beginSkip() -> Bool {
+        // Ignore repeat presses while a skip is still landing (prevents double skips).
+        guard Date() >= skipInFlightUntil else { return false }
+        skipInFlightUntil = Date().addingTimeInterval(0.6)
+        return true
+    }
+
+    /// Apps whose player rejects Now Playing seeks (remembered → go straight to their keys).
+    private static var appsRejectingSeek: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "Hoverbird.appsRejectingSeek") ?? [])
+
+    private func isYouTubePlayer() async -> Bool {
+        let bundleID = playbackState.bundleIdentifier
+        let appName = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first?.localizedName ?? ""
+        if appName.localizedCaseInsensitiveContains("youtube") { return true }
+        return await isYouTubeSource()
+    }
+
+    private func isYouTubeSource() async -> Bool {
+        let title = await MainActor.run { LiveVideoManager.shared.sourceWindowTitle } ?? ""
+        return title.localizedCaseInsensitiveContains("youtube")
     }
 
     func nextTrack() async {
-        MRMediaRemoteSendCommandFunction(4, nil)
+        guard beginSkip() else { return }
+        let bundleID = playbackState.bundleIdentifier
+        if Self.appsIgnoringSkip.contains(bundleID) {
+            let youTube = await isYouTubeSource()
+            _ = await Task.detached(priority: .userInitiated) { WebMediaFallback.perform(.next, bundleID: bundleID, isYouTube: youTube) }.value
+            return
+        }
+        let before = playbackState.title
+        send(4)
+        await fallbackIfIgnored(.next, titleBefore: before)
     }
 
+    private func mlog(_ line: String) { IslandDebugLog.write("media-debug.txt", line) }
+
     func previousTrack() async {
-        MRMediaRemoteSendCommandFunction(5, nil)
+        guard beginSkip() else { mlog("previous ignored (repeat press)"); return }
+        let before = playbackState.title
+        let bundleID = playbackState.bundleIdentifier
+
+        // YouTube: Previous means the previous video. Press the window's own Back button
+        // through Accessibility — reliable in the background and from other desktops.
+        if await isYouTubePlayer() {
+            let ok = await Task.detached(priority: .userInitiated) {
+                WebMediaFallback.perform(.previous, bundleID: bundleID, isYouTube: true)
+            }.value
+            mlog("previous (YouTube): back button \(ok ? "pressed" : "unavailable")")
+            return
+        }
+
+        // Music apps: iPhone behaviour — more than 3 s in, Previous restarts the track.
+        let elapsed = estimatedElapsed()
+        mlog("previous: elapsed≈\(String(format: "%.1f", elapsed)) app=\(bundleID.suffix(14))")
+        if elapsed > 3 && playbackState.duration > 0 {
+            await seek(to: 0)
+            return
+        }
+        if Self.appsIgnoringSkip.contains(bundleID) {
+            _ = await Task.detached(priority: .userInitiated) {
+                WebMediaFallback.perform(.previous, bundleID: bundleID, isYouTube: false)
+            }.value
+        } else {
+            send(5)
+            await fallbackIfIgnored(.previous, titleBefore: before, elapsedBefore: elapsed)
+        }
+    }
+
+    private func estimatedElapsed() -> Double {
+        let state = playbackState
+        guard state.isPlaying else { return state.currentTime }
+        return state.currentTime + Date().timeIntervalSince(state.lastUpdated) * state.playbackRate
+    }
+
+    /// Web players often ignore system next/previous: if nothing changed, use the page's own controls.
+    private func fallbackIfIgnored(_ direction: WebMediaFallback.Direction, titleBefore: String, elapsedBefore: Double = 0) async {
+        try? await Task.sleep(for: .milliseconds(900))
+        guard playbackState.title == titleBefore else { return }
+        if direction == .previous {
+            // Restarted already (elapsed jumped back)? Then it worked.
+            if estimatedElapsed() < max(1.5, elapsedBefore - 2) { return }
+        }
+        let bundleID = playbackState.bundleIdentifier
+        // Remember: this app ignores system skip commands — act instantly from now on.
+        Self.appsIgnoringSkip.insert(bundleID)
+        UserDefaults.standard.set(Array(Self.appsIgnoringSkip), forKey: "Hoverbird.appsIgnoringSkip")
+        let youTube = await isYouTubeSource()
+        skipInFlightUntil = Date().addingTimeInterval(1.0)
+        let triggered = await Task.detached(priority: .userInitiated) {
+            WebMediaFallback.perform(direction, bundleID: bundleID, isYouTube: youTube)
+        }.value
+        if direction == .previous {
+            return // previousTrack() restarts the video if nothing changed
+        } else if !triggered {
+            // Last resort for single videos: jump to the end so autoplay moves on.
+            if playbackState.duration > 5 { await seek(to: max(0, playbackState.duration - 0.5)) }
+        }
+    }
+
+    /// Runs the adapter and waits for its exit status (seek reports failure when unsupported).
+    private func adapterStatus(_ args: [String]) async -> Int32? {
+        guard let scriptURL = Bundle.main.url(forResource: "mediaremote-adapter", withExtension: "pl"),
+              let frameworkPath = Bundle.main.privateFrameworksPath?.appending("/MediaRemoteAdapter.framework") else {
+            return nil
+        }
+        return await Task.detached(priority: .userInitiated) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+            process.arguments = [scriptURL.path, frameworkPath] + args
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            do { try process.run() } catch { return nil as Int32? }
+            process.waitUntilExit()
+            return process.terminationStatus
+        }.value
     }
 
     func seek(to time: Double) async {
-        MRMediaRemoteSetElapsedTimeFunction(time)
+        let target = max(0, time)
+        let bundleID = playbackState.bundleIdentifier
+        var status: Int32? = 1
+        if !Self.appsRejectingSeek.contains(bundleID) {
+            status = await adapterStatus(["seek", "\(Int64(target * 1_000_000))"])
+            if status == 0 { return }
+            if status != nil {
+                Self.appsRejectingSeek.insert(bundleID)
+                UserDefaults.standard.set(Array(Self.appsRejectingSeek), forKey: "Hoverbird.appsRejectingSeek")
+            }
+        }
+        // The player rejects seeking (e.g. YouTube in a Safari web app): use its own keys.
+        let youTube = await isYouTubePlayer()
+        mlog("  seek \(String(format: "%.1f", target)) via adapter failed (status \(status.map(String.init) ?? "nil")) → YouTube keys: \(youTube)")
+        if youTube && target < 1.5 {
+            let ok = await WebMediaFallback.restartYouTube(bundleID: bundleID)
+            mlog("  restart via YouTube keys: \(ok ? "confirmed" : "not confirmed")")
+        } else if youTube {
+            let current = estimatedElapsed(), duration = playbackState.duration
+            _ = await Task.detached(priority: .userInitiated) {
+                WebMediaFallback.seekYouTube(from: current, to: target, duration: duration, bundleID: bundleID)
+            }.value
+        } else if status == nil {
+            MRMediaRemoteSetElapsedTimeFunction(target)
+        }
     }
 
     func isActive() -> Bool {
@@ -149,7 +306,8 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
     
     func toggleShuffle() async {
         // MRMediaRemoteSendCommandFunction(6, nil)
-        MRMediaRemoteSetShuffleModeFunction(playbackState.isShuffled ? 1 : 3)
+        let shuffleMode = playbackState.isShuffled ? 1 : 3
+        if !adapter(["shuffle", "\(shuffleMode)"]) { MRMediaRemoteSetShuffleModeFunction(shuffleMode) }
         playbackState.isShuffled.toggle()
     }
     
@@ -157,7 +315,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         // MRMediaRemoteSendCommandFunction(7, nil)
         let newRepeatMode = (playbackState.repeatMode == .off) ? 3 : (playbackState.repeatMode.rawValue - 1)
         playbackState.repeatMode = RepeatMode(rawValue: newRepeatMode) ?? .off
-        MRMediaRemoteSetRepeatModeFunction(newRepeatMode)
+        if !adapter(["repeat", "\(newRepeatMode)"]) { MRMediaRemoteSetRepeatModeFunction(newRepeatMode) }
     }
     
     func setVolume(_ level: Double) async {
@@ -199,7 +357,9 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         
         process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
         process.arguments = [scriptURL.path, frameworkPath, "stream"]
-        
+        // Hoverbird: clean up helpers an earlier run left behind (before starting ours).
+        IslandHelperProcesses.reapOrphanedAdapters()
+
         let pipeHandler = JSONLinesPipeHandler()
         process.standardOutput = await pipeHandler.getPipe()
         
@@ -208,6 +368,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
 
         do {
             try process.run()
+            IslandHelperProcesses.terminateOnQuit(process) // deinit never runs at quit
             streamTask = Task { [weak self] in
                 await self?.processJSONStream()
             }

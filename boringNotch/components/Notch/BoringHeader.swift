@@ -10,13 +10,12 @@ import SwiftUI
 
 struct BoringHeader: View {
     @EnvironmentObject var vm: BoringViewModel
-    @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var coordinator = BoringViewCoordinator.shared
     @StateObject var tvm = ShelfStateViewModel.shared
     var body: some View {
         HStack(spacing: 0) {
             HStack {
-                if (!tvm.isEmpty || coordinator.alwaysShowTabs) && Defaults[.boringShelf] {
+                if !tvm.isEmpty || coordinator.alwaysShowTabs {
                     TabSelectionView()
                 } else if vm.notchState == .open {
                     EmptyView()
@@ -36,59 +35,31 @@ struct BoringHeader: View {
                     }
             }
 
-            HStack(spacing: 4) {
+            HStack(spacing: 1) {
                 if vm.notchState == .open {
                     if isHUDType(coordinator.sneakPeek.type) && coordinator.sneakPeek.show && Defaults[.showOpenNotchHUD] {
                         OpenNotchHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon)
                             .transition(.scale(scale: 0.8).combined(with: .opacity))
                     } else {
+                        // Hoverbird: Pin · Lock · Awake · Calendar · Camera (+ gear only if it fits) · Connectivity.
+                        WindowsHeaderButton()
+                        PinHeaderButton()
+                        LockHeaderButton()
+                        AwakeHeaderButton()
+                        CalendarHeaderButton()
                         if Defaults[.showMirror] {
-                            Button(action: {
-                                vm.toggleCameraPreview()
+                            CameraHeaderButton()
+                        }
+                        if Defaults[.settingsIconInNotch] && !Defaults[.showMirror] {
+                            HeaderCircleButton(title: "Settings", help: "Settings", tap: {
+                                DispatchQueue.main.async { SettingsWindowController.shared.showWindow() }
                             }) {
-                                Capsule()
-                                    .fill(.black)
-                                    .frame(width: 30, height: 30)
-                                    .overlay {
-                                        Image(systemName: "web.camera")
-                                            .foregroundColor(.white)
-                                            .padding()
-                                            .imageScale(.medium)
-                                    }
+                                Image(systemName: "gear").foregroundStyle(.white).imageScale(.medium)
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
-                        if Defaults[.settingsIconInNotch] {
-                            Button(action: {
-                                DispatchQueue.main.async {
-                                    SettingsWindowController.shared.showWindow()
-                                }
-                                
-                            }) {
-                                Capsule()
-                                    .fill(.black)
-                                    .frame(width: 30, height: 30)
-                                    .overlay {
-                                        Image(systemName: "gear")
-                                            .foregroundColor(.white)
-                                            .padding()
-                                            .imageScale(.medium)
-                                    }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                        if Defaults[.showBatteryIndicator] {
-                            BoringBatteryView(
-                                batteryWidth: 30,
-                                isCharging: batteryModel.isCharging,
-                                isInLowPowerMode: batteryModel.isInLowPowerMode,
-                                isPluggedIn: batteryModel.isPluggedIn,
-                                levelBattery: batteryModel.levelBattery,
-                                maxCapacity: batteryModel.maxCapacity,
-                                timeToFullCharge: batteryModel.timeToFullCharge,
-                                isForNotification: false
-                            )
-                        }
+                        // Hoverbird: connectivity (Wi-Fi / hotspot / Ethernet / Bluetooth) instead of the
+                        // battery — this Mac's battery lives in Home's Batteries card.
+                        ConnectivityHeaderButton()
                     }
                 }
             }
@@ -112,6 +83,3 @@ struct BoringHeader: View {
     }
 }
 
-#Preview {
-    BoringHeader().environmentObject(BoringViewModel())
-}

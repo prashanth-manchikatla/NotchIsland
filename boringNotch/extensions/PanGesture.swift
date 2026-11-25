@@ -116,6 +116,16 @@ private struct ScrollMonitor: NSViewRepresentable {
                 return
             }
 
+            // Hoverbird: a vertical swipe over a list that can scroll (Notifications, timers,
+            // clipboard…) is scrolling — never the open/close gesture.
+            if !direction.isHorizontal, Self.isOverScrollableList(event) {
+                if active { action(0, .ended) }
+                active = false
+                accumulated = 0
+                endTask?.cancel()
+                return
+            }
+
             // Only consider scroll events that are primarily along the configured axis.
             let absDX = abs(event.scrollingDeltaX)
             let absDY = abs(event.scrollingDeltaY)
@@ -140,6 +150,23 @@ private struct ScrollMonitor: NSViewRepresentable {
             }
             // Schedule a timeout to end the gesture if no further scroll events arrive.
             scheduleEndTimeout()
+        }
+
+        /// True when the pointer is over a scroll view whose content is taller than what it shows
+        /// (SwiftUI's ScrollView is an NSScrollView underneath). Horizontal strips and lists that
+        /// already fit don't count, so swiping there still opens / closes the island.
+        private static func isOverScrollableList(_ event: NSEvent) -> Bool {
+            guard let content = event.window?.contentView else { return false }
+            let point = content.superview.map { $0.convert(event.locationInWindow, from: nil) } ?? event.locationInWindow
+            var view = content.hitTest(point)
+            while let current = view {
+                if let scroll = current as? NSScrollView, let document = scroll.documentView,
+                   document.frame.height > scroll.contentView.bounds.height + 1 {
+                    return true
+                }
+                view = current.superview
+            }
+            return false
         }
     }
 }

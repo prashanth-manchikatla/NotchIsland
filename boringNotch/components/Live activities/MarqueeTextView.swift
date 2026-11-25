@@ -61,26 +61,13 @@ struct MarqueeText: View {
                 .font(font)
                 .foregroundColor(textColor)
                 .fixedSize(horizontal: true, vertical: false)
-                .offset(x: self.animate ? offset : 0)
-                .animation(
-                    self.animate ?
-                        .linear(duration: Double(textSize.width / 30))
-                        .delay(minDuration)
-                        .repeatForever(autoreverses: false) : .none,
-                    value: self.animate
-                )
+                .offset(x: offset)
                 .background(backgroundColor)
                 .modifier(MeasureSizeModifier())
                 .onPreferenceChange(SizePreferenceKey.self) { size in
-                    self.textSize = CGSize(width: size.width / 2, height: NSFont.preferredFont(forTextStyle: nsFont).pointSize)
-                    self.animate = false
-                    self.offset = 0
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01){
-                        if needsScrolling {
-                            self.animate = true
-                            self.offset = -(textSize.width + 10)
-                            
-                        }
+                    let measured = CGSize(width: size.width / 2, height: NSFont.preferredFont(forTextStyle: nsFont).pointSize)
+                    if abs(measured.width - textSize.width) > 0.5 || abs(measured.height - textSize.height) > 0.5 {
+                        textSize = measured
                     }
                 }
             }
@@ -88,6 +75,23 @@ struct MarqueeText: View {
             .clipped()
         }
         .frame(height: textSize.height * 1.3)
-        
+        // Hoverbird: scroll once, then rest — same look, without an endless per-frame animation.
+        .task(id: "\(text)|\(needsScrolling)|\(Int(textSize.width))") {
+            offset = 0
+            guard needsScrolling else { return }
+            let distance = textSize.width + 20
+            let duration = Double(distance / 34)
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(max(1.2, minDuration)))
+                guard !Task.isCancelled else { return }
+                withAnimation(.linear(duration: duration)) { offset = -distance }
+                try? await Task.sleep(for: .seconds(duration))
+                guard !Task.isCancelled else { return }
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { offset = 0 } // seamless: the copy now sits where the original began
+                try? await Task.sleep(for: .seconds(2.5))
+            }
+        }
     }
 }
