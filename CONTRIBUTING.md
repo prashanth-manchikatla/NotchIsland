@@ -1,133 +1,80 @@
-# Contributing
+# Contributing to Hoverbird
 
-Thank you for taking the time to contribute! ❤️
+Thanks for helping make Hoverbird better! Bug reports, ideas, documentation and code are all welcome.
 
-These guidelines help streamline the contribution process for everyone involved. By following them, you'll make it easier for maintainers to review your work and collaborate with you effectively.
+- **Questions and ideas** → [Discussions](https://github.com/prashanth-manchikatla/Hoverbird/discussions)
+- **Bugs and concrete feature requests** → [Issues](https://github.com/prashanth-manchikatla/Hoverbird/issues/new/choose)
+- **Security problems** → privately, as described in [SECURITY.md](SECURITY.md)
 
-You can contribute in many ways: writing code, improving documentation, reporting bugs, requesting features, or creating tutorials and blog posts. Every contribution, large or small, helps make Boring Notch better.
+Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-## Table of Contents
+## Getting set up
 
-- [Localizations](#localizations)
-- [Contributing Code](#contributing-code)
-  - [Before You Start](#before-you-start)
-  - [Setting Up Your Environment](#setting-up-your-environment)
-  - [Making Changes](#making-changes)
-  - [Pull Requests](#pull-requests)
-<!-- - [Code Style Guidelines](#code-style-guidelines) -->
-- [Reporting Bugs](#reporting-bugs)
-- [Feature Requests](#feature-requests)
-- [Getting Help](#getting-help)
+```bash
+git clone https://github.com/prashanth-manchikatla/Hoverbird.git
+cd Hoverbird
+./Scripts/setup-signing.sh      # optional, once: keeps macOS permissions across rebuilds
+./Scripts/build.sh --debug      # fast build → build/Hoverbird.app
+./Scripts/build.sh --install    # optimized build, installed to /Applications and relaunched
+```
 
-## Localizations
+Only the Command Line Tools are needed. See [docs/building.md](docs/building.md) for details and
+troubleshooting, and [docs/architecture.md](docs/architecture.md) for how the code is organised.
 
-Please submit all translations to [Crowdin](https://crowdin.com/project/boring-notch). New strings added to the `dev` branch from code changes will sync automatically to Crowdin, and Crowdin will automatically open a new PR with translations to allow us to integrate them.
+## Making a change
 
-## Contributing Code
+1. **Talk first about big things.** For a new feature or a large refactor, open an issue or discussion
+   before writing code, so we can agree on the approach.
+2. **Branch** from `main`: `feat/short-description`, `fix/short-description`, `docs/…`.
+3. **Keep it focused.** One feature or fix per pull request.
+4. **Build and try it.** `./Scripts/build.sh` must succeed with no new warnings in the code you touched,
+   and you should have used the feature yourself in the running app.
+5. **Open a pull request** using the template, with screenshots or a short recording for anything
+   visible.
 
-### Before You Start
+### The Hoverbird way
 
-- **Check existing issues**: Before creating a new issue or starting work, search existing issues to avoid duplicates.
-- **Discuss major changes**: For significant features or major changes, please open an issue first to discuss your approach with maintainers and the community.
-<!-- - **Review the code style**: Familiarize yourself with our code style guidelines below to ensure consistency. -->
+These keep Hoverbird fast and trustworthy — reviews check for them:
 
-> [!IMPORTANT]
-> All code contributions must be based on the `dev` branch, not `main`. Documentation changes should be based on `main` instead.
+- **No polling.** React to system events (FSEvents, notifications, property listeners). If something
+  must sample, it runs only while its view is visible.
+- **Cheap when idle.** Check idle CPU (≈ 0 %) and memory (`footprint <pid>`) before and after changes to
+  anything that runs in the background.
+- **Private by default.** Don't send data off the Mac unless the feature is exactly that, and make
+  anything that reads another app's data or sign-in opt-in, with a clear explanation. Never log secrets.
+- **Never steal focus.** The island window can't become key; use a non-activating panel for typing.
+- **One feature, one folder** under `boringNotch/Hoverbird/`, starting with a short header comment that
+  says what the file does and why.
+- **Plain, friendly UI text.** Short labels, sentence case, no jargon.
 
-### Setting Up Your Environment
+### Code style
 
-1. **Fork the repository**: Click the "Fork" button at the top of the repository page to create your own copy.
+- Swift 5 language mode, 4-space indentation (see `.editorconfig`).
+- Prefer clear names over comments; comment the *why*, not the *what*.
+- Keep UI on `@MainActor`; do heavy work on a background queue and publish results to the main actor.
+- Match the surrounding code. Upstream boring.notch files are kept close to upstream; mark Hoverbird
+  changes in them with a `// Hoverbird:` comment.
 
-2. **Clone your fork**:
-   ```bash
-   git clone https://github.com/{your-username}/boring.notch.git
-   cd boring.notch
-   ```
-   Replace `{your-username}` with your GitHub username.
+### Commit messages
 
-3. **Switch to the `dev` branch**:
-   ```bash
-   git checkout dev
-   ```
-   All code contributions must be based on the `dev` branch, not `main`. Documentation changes should be based on `main` instead.
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-5. **Create a new feature branch**:
-   ```bash
-   git checkout -b feature/{your-feature-name}
-   ```
-   Replace `{your-feature-name}` with a descriptive name. Use lowercase letters, numbers, and hyphens only (e.g., `feature/add-dark-mode` or `fix/notification-crash`).
+```
+feat(ai): show subagents under each running agent
+fix(camera): fall back to the Mac camera when the iPhone disconnects
+docs: explain stable signing
+```
 
-### Making Changes
+Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `build`, `ci`, `chore`, `test`.
 
-1. **Make your changes**: Implement your feature or bug fix. Write clean, well-documented code <!-- following the project's style guidelines. -->
+## Reporting a bug well
 
-2. **Test your changes**: Ensure your changes work as expected and don't break existing functionality.
+The bug form asks for your macOS version, your Mac, the Hoverbird version (*Settings › About*) and the
+steps to reproduce. A screenshot or screen recording helps a lot. For iPhone and notification issues,
+*Settings › iPhone & Notifications › Export diagnostics* writes a diagnostics file you can attach after
+reviewing it.
 
-3. **Commit your changes**:
-   ```bash
-   git add .
-   git commit -m "Add descriptive commit message"
-   ```
-   Write clear, concise commit messages that explain what your changes do and why.
+## License
 
-4. **Keep your branch up to date**:
-   Regularly sync your branch with the latest changes from the `dev` branch to avoid conflicts.
-
-5. **Push to your fork**:
-   ```bash
-   git push origin feature/{your-feature-name}
-   ```
-
-### Pull Requests
-
-1. **Create a pull request**: Go to the original repository and click "New Pull Request." Select your feature branch and set the base branch to `dev`.
-
-2. **Write a detailed description**: Your PR should include:
-   - A clear title summarizing the changes
-   - A detailed description of what was changed and why
-   - Reference to any related issues (e.g., "Fixes #123" or "Relates to #456")
-   - Screenshots or screen recordings for UI changes
-
-3. **Respond to feedback**: Maintainers may request changes.
-
-4. **Be patient**: Reviews take time. Maintainers will get to your PR as soon as they can.
-
-<!-- ## Code Style Guidelines
-
-- Follow the existing code style and conventions used in the project
-- Write clear, self-documenting code with meaningful variable and function names
-- Add comments for complex logic or non-obvious implementations
-- Ensure your code is properly formatted before committing
-- Remove any debugging code, console logs, or commented-out code before submitting -->
-
-## Reporting Bugs
-
-When reporting bugs, please include:
-
-- A clear, descriptive title
-- Steps to reproduce the issue
-- Expected behavior vs. actual behavior
-- Screenshots or error messages if applicable
-- Your environment details (OS version, app version, etc.)
-
-## Feature Requests
-
-Feature requests are welcome! Please:
-
-- Check if the feature has already been requested
-- Clearly describe the feature and its use case
-- Explain why this feature would be valuable to users
-- Be open to discussion and alternative approaches
-
-## Getting Help
-
-If you need help or have questions:
-
-- Check the project documentation
-- Search existing issues for similar questions
-- Open a new issue with the "question" label
-- Join our [community Discord server](https://discord.com/servers/boring-notch-1269588937320566815)
-
----
-
-Thank you for contributing to Boring Notch! Your efforts help make this project better for everyone. 🎉
+By contributing, you agree that your contributions are licensed under the
+[GNU General Public License v3.0](LICENSE), the license of this project.
