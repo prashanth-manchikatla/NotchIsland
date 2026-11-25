@@ -1,0 +1,101 @@
+name: Bug report
+description: Something in NotchIsland isn't working the way it should.
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please search [existing issues](../issues?q=is%3Aissue) first.
+        For questions, use [Discussions](../discussions/categories/q-a). **Security problems:** report them privately — see SECURITY.md.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I hover the notch while a video plays, the island…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the AI Usage tab
+        2. Click …
+        3. See …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature area
+      options:
+        - Island (opening, glass, tabs)
+        - Live Activities (closed island)
+        - Media & live video
+        - AI Usage
+        - Focus, timers & stopwatches
+        - Notes
+        - Camera
+        - Capture & screen tools
+        - Clipboard
+        - Notifications & iPhone
+        - Meetings, microphone & camera
+        - Windows
+        - Devices & files
+        - Monitor
+        - Awake
+        - Settings
+        - Build / installation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: NotchIsland version
+      description: Settings › About, or the release you downloaded.
+      placeholder: 1.0.0-beta.1
+    validations:
+      required: true
+  - type: dropdown
+    id: macos
+    attributes:
+      label: macOS version
+      options:
+        - macOS 26 Tahoe
+        - macOS 15 Sequoia
+        - macOS 14 Sonoma
+    validations:
+      required: true
+  - type: input
+    id: mac
+    attributes:
+      label: Mac
+      placeholder: MacBook Air M4, 13-inch (with notch) + external display
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots or a screen recording
+      description: Drag files here. Please blur anything personal (notifications, prompts, names).
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics (optional)
+      description: For iPhone / notification issues, Settings › iPhone & Notifications › Export diagnostics. Review it before pasting.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this hasn't been reported.
+          required: true
+        - label: I'm on the latest release (or built from the latest main).
+          required: false

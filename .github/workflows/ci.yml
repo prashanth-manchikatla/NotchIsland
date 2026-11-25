@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # the build number is the commit count
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: No test hooks or debug leftovers
+        run: |
+          if grep -rnE "SelfTestHook|TEMPORARY test hook|DLDEBUG" boringNotch --include='*.swift'; then
+            echo "::error::Remove temporary test hooks before merging."; exit 1
+          fi
+
+      - name: Cache compiled dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build/manual/debug/lib
+            .build/manual/debug/modules
+            .build/manual/debug/stamps
+          key: vendor-${{ runner.os }}-${{ hashFiles('Vendor/**/*.swift', 'Scripts/build.sh') }}
+
+      - name: Build
+        run: ./Scripts/build.sh --debug
+
+      - name: Package
+        run: ditto -c -k --sequesterRsrc --keepParent build/NotchIsland.app NotchIsland-debug.zip
+
+      - name: Upload the app
+        uses: actions/upload-artifact@v4
+        with:
+          name: NotchIsland-debug-${{ github.sha }}
+          path: NotchIsland-debug.zip
+          retention-days: 7

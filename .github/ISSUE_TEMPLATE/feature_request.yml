@@ -1,0 +1,52 @@
+name: Feature request
+description: Suggest a concrete improvement. (Early ideas are great in Discussions › Ideas.)
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation and why today's NotchIsland falls short.
+      placeholder: When I'm in a meeting, I can't tell at a glance whether…
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to happen?
+      description: How it could look and behave in the island. Sketches welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature area
+      options:
+        - Island (opening, glass, tabs)
+        - Live Activities (closed island)
+        - Media & live video
+        - AI Usage
+        - Focus, timers & stopwatches
+        - Notes
+        - Camera
+        - Capture & screen tools
+        - Clipboard
+        - Notifications & iPhone
+        - Meetings, microphone & camera
+        - Windows
+        - Devices & files
+        - Monitor
+        - Awake
+        - Something new
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Fits NotchIsland
+      description: See CONTRIBUTING.md › The NotchIsland way.
+      options:
+        - label: It can work without constantly polling or using much CPU in the background.
+        - label: It keeps data on the Mac (or explains clearly what would leave it).
