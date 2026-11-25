@@ -50,7 +50,7 @@ jobs:
         run: ditto -c -k --sequesterRsrc --keepParent build/NotchIsland.app NotchIsland-debug.zip
 
       - name: Upload the app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: NotchIsland-debug-${{ github.sha }}
           path: NotchIsland-debug.zip
