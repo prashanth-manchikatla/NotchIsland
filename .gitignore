@@ -53,3 +53,11 @@ build/
 *.xcarchive
 *.dSYM
 
+
+# Hoverbird (SwiftPM build)
+.build/
+build/
+/.swiftpm/
+
+# Local signing identity (keychain password!) — never commit
+.signing/
