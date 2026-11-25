@@ -34,43 +34,91 @@ says so.
 <tr>
 <td width="50%" valign="top">
 
-### ✦ AI usage, live
-See your **Claude Code**, **Codex**, **Gemini CLI** and **Grok CLI** usage at a glance: the 5-hour and weekly
-limits with a pace marker, tokens per prompt, running agents and what they're doing, and alerts before
-you hit a limit. API accounts (OpenRouter, OpenAI, DeepSeek) too.
+### 🎬 YouTube, right in the notch
+Play a video on YouTube — in any browser or as a web app — or in a player like IINA, VLC or QuickTime, and the island shows **the video itself**, live, with its title and controls. YouTube's controls work in the background and from other desktops; copy-protected streams (Netflix, Prime Video…) show their artwork and episode instead.
 
 </td>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/youtube.gif" alt="A YouTube video playing inside the island">
+
+</td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 
 <img src="docs/assets/screenshots/ai-usage.png" alt="AI Usage tab in the island">
 
 </td>
+<td width="50%" valign="top">
+
+### ✦ AI usage, live
+**Claude Code**, **Codex**, **Gemini CLI** and **Grok CLI** usage at a glance: the 5-hour and weekly limits with a pace marker, tokens per prompt, running agents and what they're doing, and alerts before you hit a limit. API accounts (OpenRouter, OpenAI, DeepSeek) too.
+
+</td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-<img src="docs/assets/screenshots/focus.png" alt="Timers, stopwatches and a Focus session">
+### 🪟 Window snapping
+Snap the front window into halves, thirds, quarters and more — from the island or with ⌃⌥ shortcuts. **Arrange** shows a live mini-map of your windows to drag between zones; **Apps** quits apps in one place.
 
 </td>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/windows.png" alt="Window snapping layouts">
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/notifications.png" alt="Notifications in the island">
+
+</td>
+<td width="50%" valign="top">
+
+### 🔔 Notifications, iPhone included
+Notification banners — including your iPhone's — land in the island. Read them in full, copy a one-time code with one tap, open or clear them; order and ride updates become a live activity with an ETA.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 📷 Camera
+A mirror on every tab. Take a photo, record a video with sound, or go full screen. It always starts with your Mac's camera, with a one-click switch to a nearby iPhone (Continuity Camera).
+
+</td>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/camera.png" alt="Camera mirror next to a playing video">
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/monitor.png" alt="System monitor in the island">
+
+</td>
+<td width="50%" valign="top">
+
+### 📈 System monitor
+CPU per cluster with frequency and temperature, GPU, memory pressure, power and I/O — live, with no admin rights. A detailed window adds per-core graphs, every sensor and a process table.
+
+</td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 
 ### 🍅 Focus, timers & stopwatches
-Pomodoro focus sessions with breaks, streaks and generated focus sounds (brown, pink, white noise,
-ocean). Run any number of timers and stopwatches side by side — the closed island keeps counting.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### 📸 Capture & screen tools
-Screenshots and screen recordings, plus **Copy Text** from anything on screen (on-device OCR),
-**Scan QR** and **Pick Color** — the tools people usually pay for.
+Pomodoro focus sessions with breaks, streaks and generated focus sounds. Run any number of timers and stopwatches side by side — the closed island keeps counting.
 
 </td>
 <td width="50%" valign="top">
 
-<img src="docs/assets/screenshots/capture.png" alt="Capture tab with screen tools">
+<img src="docs/assets/screenshots/focus.png" alt="Timers, stopwatches and a Focus session">
 
 </td>
 </tr>
@@ -83,12 +131,41 @@ Screenshots and screen recordings, plus **Copy Text** from anything on screen (o
 <td width="50%" valign="top">
 
 ### ☑︎ Notes & to-dos
-A to-do list and a quick note, one hover away. Tick things off right in the island; a small glass
-panel opens for typing without stealing focus from your app.
+A to-do list and a quick note, one hover away. Tick things off right in the island; a small glass panel opens for typing without stealing focus from your app.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 📸 Capture & screen tools
+Screenshots and screen recordings, plus **Copy Text** from anything on screen (on-device OCR), **Scan QR** and **Pick Color**.
+
+</td>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/capture.png" alt="Capture tab with screen tools">
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/clipboard.png" alt="Clipboard history in the island">
+
+</td>
+<td width="50%" valign="top">
+
+### 📋 Clipboard history
+Text, links, colours, images and files you copied, with pins and filters. Copied links lose their tracking junk, and ⌃⌥V pastes as plain text.
 
 </td>
 </tr>
 </table>
+
+<p align="center"><sub>Video in the YouTube demo: <i>Big Buck Bunny</i> © Blender Foundation, <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>. Notifications and clipboard show demo content.</sub></p>
+
+**And more:** ☕️ Awake (keep the Mac up, even with the lid closed) · 📅 Calendar with Join buttons and weather · 🎧 AirPods and accessory batteries · 🗂 Shelf with AirDrop · ⚡️ your Shortcuts · ⬇️ download and drive alerts · 🎙 one-key microphone mute · 🔒 lock in one click.
 
 <p align="center">
   <img src="docs/assets/screenshots/ai-window.png" alt="The AI Usage window: limits, charts, tasks and sessions" width="88%">
@@ -160,8 +237,8 @@ Hoverbird asks only for what a feature needs, and every feature works on its own
 | Location | Weather, and the Wi-Fi network name |
 | Bluetooth | AirPods and accessory batteries |
 
-**Optional:** *AI Usage › Show live limits* reads the sign-in Claude Code already keeps in your Keychain
-(macOS asks first). Read **[docs/privacy.md](docs/privacy.md)** for exactly what each feature touches.
+**Optional:** *AI Usage › Show live limits* reads the sign-in Claude Code already keeps in your Keychain,
+only after you turn it on. Read **[docs/privacy.md](docs/privacy.md)** for exactly what each feature touches.
 
 ## Keyboard shortcuts
 
