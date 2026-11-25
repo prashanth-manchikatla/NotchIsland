@@ -1,0 +1,32 @@
+NotchIsland
+The iPhone's Dynamic Island, reimagined for your MacBook's notch.
+
+NotchIsland is free software, licensed under the GNU General Public License v3.0
+(see LICENSE).
+
+NotchIsland is a derivative work of boring.notch
+  https://github.com/TheBoredTeam/boring.notch
+  Copyright (C) TheBoredTeam and the boring.notch contributors
+  Licensed under the GNU General Public License v3.0
+The git history of this repository includes boring.notch's history up to the
+point NotchIsland diverged, preserving its authors' attribution.
+
+NotchIsland includes or adapts the following third-party software:
+
+  mediaremote-adapter            BSD 3-Clause    (c) 2025 Jonas van den Berg and contributors
+  Defaults                       MIT             (c) Sindre Sorhus
+  KeyboardShortcuts              MIT             (c) Sindre Sorhus
+  LaunchAtLogin-Modern           MIT             (c) Sindre Sorhus
+  SwiftUI-Introspect             MIT             (c) 2019 Timber Software
+  SkyLightWindow                 MIT             (c) 2025 Lakr Aream
+  MacroVisionKit                 MIT             (c) 2024 theboringhumane
+  NotchDrop                      MIT             (c) 2024 Lakr Aream
+  DynamicNotchKit (notch shape)  MIT             (c) 2025 Kai Azim
+  Calendr (calendar models)      MIT             (c) 2021 Carlos César Neves Enumo
+  Parrot (CGSSpace)              MPL 2.0         (c) 2018 Aditya Vaidyam and contributors
+
+The full license texts are in THIRD_PARTY_LICENSES and in each Vendor/<module>/LICENSE.
+
+NotchIsland is an independent project. It is not affiliated with or endorsed by
+Apple, Anthropic, OpenAI, Google or xAI. All product names are trademarks of
+their respective owners.

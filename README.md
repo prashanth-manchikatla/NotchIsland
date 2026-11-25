@@ -1,199 +1,244 @@
-<h1 align="center">
-  <br>
-  <a href="http://theboring.name"><img src="https://framerusercontent.com/images/RFK4vs0kn8pRMuOO58JeyoemXA.png?scale-down-to=256" alt="Boring Notch" width="150"></a>
-  <br>
-  Boring Notch
-  <br>
-</h1>
+<div align="center">
 
+<img src="docs/assets/icon.png" width="112" alt="NotchIsland app icon">
+
+# NotchIsland
+
+**The iPhone's Dynamic Island, reimagined for your MacBook's notch. Free and open source.**
+
+[![Build](https://github.com/prashanth-manchikatla/NotchIsland/actions/workflows/ci.yml/badge.svg)](https://github.com/prashanth-manchikatla/NotchIsland/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/prashanth-manchikatla/NotchIsland?include_prereleases&label=release&color=8a63d2)](https://github.com/prashanth-manchikatla/NotchIsland/releases)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-111111?logo=apple)](#requirements)
+[![Swift](https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white)](https://developer.apple.com/swift/)
+
+[**Download**](#install) · [Features](docs/features.md) · [Build from source](docs/building.md) · [Privacy](docs/privacy.md) · [Discussions](https://github.com/prashanth-manchikatla/NotchIsland/discussions)
+
+<img src="docs/assets/banner.svg" alt="NotchIsland — the Dynamic Island for your Mac" width="100%">
+
+</div>
+
+---
+
+NotchIsland turns the notch on your MacBook into a living, iPhone-style **Dynamic Island**. Hover it to open a
+glass panel with your media, timers, notes, AI usage and more; while you work, it shows live activities
+around the camera — a recording, a timer, an AI agent that needs your permission — the way an iPhone does.
+
+It is built to disappear when you don't need it: every feature is **event-driven**, so it idles at
+**~0 % CPU** with a small memory footprint, and **nothing leaves your Mac** unless you turn on a feature that
+says so.
+
+## Highlights
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### ✦ AI usage, live
+See your **Claude Code**, **Codex**, **Gemini CLI** and **Grok CLI** usage at a glance: the 5-hour and weekly
+limits with a pace marker, tokens per prompt, running agents and what they're doing, and alerts before
+you hit a limit. API accounts (OpenRouter, OpenAI, DeepSeek) too.
+
+</td>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/ai-usage.png" alt="AI Usage tab in the island">
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/focus.png" alt="Timers, stopwatches and a Focus session">
+
+</td>
+<td width="50%" valign="top">
+
+### 🍅 Focus, timers & stopwatches
+Pomodoro focus sessions with breaks, streaks and generated focus sounds (brown, pink, white noise,
+ocean). Run any number of timers and stopwatches side by side — the closed island keeps counting.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 📸 Capture & screen tools
+Screenshots and screen recordings, plus **Copy Text** from anything on screen (on-device OCR),
+**Scan QR** and **Pick Color** — the tools people usually pay for.
+
+</td>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/capture.png" alt="Capture tab with screen tools">
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+<img src="docs/assets/screenshots/notes.png" alt="Notes and to-dos in the island">
+
+</td>
+<td width="50%" valign="top">
+
+### ☑︎ Notes & to-dos
+A to-do list and a quick note, one hover away. Tick things off right in the island; a small glass
+panel opens for typing without stealing focus from your app.
+
+</td>
+</tr>
+</table>
 
 <p align="center">
-  <a title="Crowdin" target="_blank" href="https://crowdin.com/project/boring-notch"><img src="https://badges.crowdin.net/boring-notch/localized.svg"></a>
-  <img src="https://github.com/TheBoredTeam/boring.notch/actions/workflows/cicd.yml/badge.svg" alt="TheBoringNotch Build & Test" style="margin-right: 10px;" />
-  <a href="https://discord.gg/c8JXA7qrPm">
-    <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/c8JXA7qrPm?style=flat" alt="Discord Badge" />
-  </a>
-  <a href="https://www.ko-fi.com/alexander5015">
-    <img src="https://srv-cdn.himpfen.io/badges/kofi/kofi-flat.svg" alt="Ko-Fi" />
-  </a>
+  <img src="docs/assets/screenshots/ai-window.png" alt="The AI Usage window: limits, charts, tasks and sessions" width="88%">
+  <br><sub>The AI Usage window: limits with pace, 30-day history, and tables for tasks, sessions, models, projects and every call — all exportable to CSV.</sub>
 </p>
 
-<p align="center">
-  <a href="https://trendshift.io/repositories/14815?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-14815" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/14815" alt="TheBoredTeam%2Fboring.notch |    Trendshift" width="250" height="55"/></a>
-</p>
-<!--Welcome to **Boring.Notch**, the coolest way to make your MacBook's notch the star of the show! Forget about those boring status bars—our notch turns into a dynamic music control center, complete with a snazzy visualizer and all the music controls you need. It's like having a mini concert right at the top of your screen! -->
+## Everything it does
 
-Say hello to **Boring Notch**, the coolest way to make your MacBook’s notch the star of the show! Say goodbye to boring status bars: with Boring Notch, your notch transforms into a dynamic music control center, complete with a vibrant visualizer and all the essential music controls you need. But that’s just the start! Boring Notch also offers calendar integration, a handy file shelf with AirDrop support, a complete MacOS HUD replacement and more!
+| | |
+|---|---|
+| **Live Activities** | Recording, timers, iPhone orders & rides, iPhone Live Activities, next meeting, media, Awake — one primary activity wraps the camera, a second floats as a bubble, iPhone-style. |
+| **Media** | Now Playing for every app (Music, Spotify, browsers, web apps), lyrics, visualizer — and the playing **video itself** in the artwork. |
+| **AI Usage** | Limits, tokens, tasks, sessions, running agents and alerts for Claude Code, Codex, Gemini CLI, Grok CLI and API accounts. |
+| **Focus** | Pomodoro sessions, focus sounds, streaks, 20-20-20 eye-break reminders. |
+| **Notes** | To-dos and a quick note, saved only on your Mac. |
+| **Camera** | A mirror on every tab; photos, video with sound, full screen. Uses your Mac's camera, with a one-click switch to a nearby iPhone (Continuity Camera). |
+| **Capture** | Screenshots, screen recording (system audio + mic), Copy Text (OCR), Scan QR, Pick Color. |
+| **Clipboard** | History of text, links, colours, images and files; pinning; tracking stripped from copied links; paste as plain text. |
+| **Notifications** | Mirrors notification banners (including your iPhone's), with read, copy OTP, open, mark read and clear. |
+| **Meetings** | Mute the microphone for every app at once (⌃⌥M), a "Muted" indicator during calls, camera-in-use alerts, one-click Join for upcoming meetings. |
+| **Windows** | Snap layouts (halves, thirds, quarters…), a live mini-map to arrange windows, quit apps. |
+| **Devices** | AirPods and Bluetooth batteries, charging, connectivity, battery alerts at your levels, downloads and drives. |
+| **Monitor** | CPU (per cluster), GPU, memory, power and temperatures — no admin rights needed. |
+| **Awake** | Keep the Mac awake for a while, until a time, or with the lid closed. |
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/2d5f69c1-6e7b-4bc2-a6f1-bb9e27cf88a8" alt="Demo GIF" />
-</p>
+See **[docs/features.md](docs/features.md)** for the complete tour.
 
-<!--https://github.com/user-attachments/assets/19b87973-4b3a-4853-b532-7e82d1d6b040-->
----
-<!--## Table of Contents
-- [Installation](#installation)
-- [Usage](#usage)
-- [Roadmap](#-roadmap)
-- [Building from Source](#building-from-source)
-- [Contributing](#-contributing)
-- [Join our Discord Server](#join-our-discord-server)
-- [Star History](#star-history)
-- [Buy us a coffee!](#buy-us-a-coffee)
-- [Acknowledgments](#-acknowledgments)-->
+## Install
 
-## Installation
+### Download
 
-**System Requirements:**
-- macOS **14 Sonoma** or later
-- Apple Silicon or Intel Mac
-
----
-
-### Option 1: Download and Install Manually
-
-<a href="https://github.com/TheBoredTeam/boring.notch/releases/latest/download/boringNotch.dmg" target="_self"><img width="200" src="https://github.com/user-attachments/assets/e3179be1-8416-4b8a-b417-743e1ecc67d6" alt="Download for macOS" /></a>
-
-Once downloaded, open the `.dmg` and move **Boring Notch** to your `/Applications` folder.
-
-> [!IMPORTANT]
-> We don't have an Apple Developer account (yet 👀), so macOS will warn you that Boring Notch is from an unidentified developer on first launch. This is expected behavior.
->
-> You'll need to bypass this before the app will open. You only need to do this once. Use one of the methods below.
-
----
-
-#### Recommended: Terminal (Always Works)
-
-This is the quickest and easiest method. It only requires a single command and works consistently for all users. System Settings can sometimes fail and won't work for non-admin users.
-
-After moving Boring Notch to your Applications folder, run:
-
-```bash
-xattr -dr com.apple.quarantine "/Applications/Boring Notch.app"
-```
-
-Then open the app normally.
-
----
-
-#### Alternative: System Settings
+1. Download **NotchIsland-*version*.zip** from the [latest release](https://github.com/prashanth-manchikatla/NotchIsland/releases).
+2. Unzip it and drag **NotchIsland.app** to **Applications**.
+3. Open it. macOS will say it can't verify the developer — NotchIsland isn't notarized yet — so go to
+   **System Settings › Privacy & Security** and click **Open Anyway** (you only do this once).
+4. Grant the permissions you want (see below). NotchIsland starts at login from then on.
 
 > [!NOTE]
-> This method doesn't work for all users. If this doesn't work, use the Terminal method above.
+> Release builds are ad-hoc signed, so after installing an update macOS may ask for permissions again.
+> Building from source with a local signing identity avoids that — see [docs/building.md](docs/building.md).
 
-1. Try to open the app — you'll see a security warning.
-2. Click **OK** to dismiss it.
-3. Open **System Settings** > **Privacy & Security**.
-4. Scroll to the bottom and click **Open Anyway** next to the Boring Notch warning.
-5. Confirm if prompted.
+### Build from source
 
----
-
-### Option 2: Install via Homebrew
-
-You can also install using [Homebrew](https://brew.sh). The Homebrew installation automatically bypasses the macOS security warning described above.
+Only Apple's Command Line Tools are needed — no Xcode, no package manager:
 
 ```bash
-brew install --cask TheBoredTeam/boring-notch/boring-notch
+git clone https://github.com/prashanth-manchikatla/NotchIsland.git
+cd NotchIsland
+./Scripts/build.sh --install   # builds, installs to /Applications and launches
 ```
 
-## Usage
+Details, options and troubleshooting: **[docs/building.md](docs/building.md)**.
 
-- Launch the app, and voilà—your notch is now the coolest part of your screen.
-- Hover over the notch to see it expand and reveal all its secrets.
-- Use the controls to manage your music like a rockstar.
-- Click the star in your menu bar to customize your notch to your heart's content.
+### Requirements
 
-## 📋 Roadmap
-- [x] Playback live activity 🎧
-- [x] Calendar integration 📆
-- [x] Reminders integration ☑️
-- [x] Mirror 📷
-- [x] Charging indicator and current percentage 🔋
-- [x] Customizable gesture control 👆🏻
-- [x] Shelf functionality with AirDrop 📚
-- [x] Notch sizing customization, finetuning on different display sizes 🖥️
-- [x] System HUD replacements (volume, brightness, backlight) 🎚️💡⌨️
-- [ ] Bluetooth Live Activity (connect/disconnect for bluetooth devices) 
-- [ ] Weather integration ⛅️
-- [ ] Customizable Layout options 🛠️
-- [ ] Lock Screen Widgets 🔒
-- [ ] Extension system 🧩
-- [ ] Notifications (under consideration) 🔔
-<!-- - [ ] Clipboard history manager 📌 `Extension` -->
-<!-- - [ ] Download indicator of different browsers (Safari, Chromium browsers, Firefox) 🌍 `Extension`-->
-<!-- - [ ] Customizable function buttons 🎛️ -->
-<!-- - [ ] App switcher 🪄 -->
+- macOS 14 Sonoma or later (macOS 26 Tahoe recommended; Liquid Glass and some extras need it)
+- A Mac with Apple silicon. Designed for MacBooks with a notch; it also works on displays without one.
 
-<!-- ## 🧩 Extensions
-> [!NOTE]
-> We’re hard at work on some awesome extensions! Stay tuned, and we’ll keep you updated as soon as they’re released. -->
+## Permissions
 
-## Building from Source
+NotchIsland asks only for what a feature needs, and every feature works on its own.
 
-### Prerequisites
+| Permission | Used for |
+|---|---|
+| Accessibility | Notification mirroring, media fallbacks, window snapping, ⌘C ⌘C, paste |
+| Screen & System Audio Recording | Screenshots, screen recording, the live video in the artwork, Copy Text |
+| Camera / Microphone | The mirror, photos and videos (the mic is on only while recording) |
+| Calendars | Upcoming meetings and the Join button |
+| Location | Weather, and the Wi-Fi network name |
+| Bluetooth | AirPods and accessory batteries |
 
-- **macOS 15.6 or later**
-- **Xcode 26 or later**
+**Optional:** *AI Usage › Show live limits* reads the sign-in Claude Code already keeps in your Keychain
+(macOS asks first). Read **[docs/privacy.md](docs/privacy.md)** for exactly what each feature touches.
 
-### Installation
+## Keyboard shortcuts
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/TheBoredTeam/boring.notch.git
-   cd boring.notch
-   ```
+| Shortcut | Action |
+|---|---|
+| ⌘⇧I | Open or close the island |
+| ⌃⌥C · ⌘C ⌘C | Open the clipboard |
+| ⇧⌘2 | Copy text from the screen |
+| ⌃⌥M | Mute / unmute the microphone |
+| ⌃⌥V | Paste as plain text |
+| ⌃⌥A | Keep the Mac awake |
+| ⌃⌥ ← → ↑ ↓ · ↩ · ⌫ | Snap the front window to a half · fill · restore |
+| ⌃⌥ D / F / G | Snap to the left / center / right third |
 
-2. **Open the Project in Xcode**:
-   ```bash
-   open boringNotch.xcodeproj
-   ```
+All shortcuts can be changed in Settings.
 
-3. **Build and Run**:
-    - Click the "Run" button or press `Cmd + R`. Watch the magic unfold!
+## FAQ
 
-## 🤝 Contributing
+<details>
+<summary><b>Does it slow my Mac down?</b></summary>
 
-We’re all about good vibes and awesome contributions! Read [CONTRIBUTING.md](CONTRIBUTING.md) to learn how you can join the fun!
+No. NotchIsland reacts to system events instead of polling — file-system events, power, audio and
+network notifications — so it idles near 0 % CPU. Heavier work (live video, the system monitor) only runs
+while that view is open.
+</details>
 
-## Join our Discord Server
+<details>
+<summary><b>How does AI Usage know my limits without an API key?</b></summary>
 
-<a href="https://discord.gg/GvYcYpAKTu" target="_blank"><img src="https://iili.io/28m3GHv.png" alt="Join The Boring Server!" style="height: 60px !important;width: 217px !important;" ></a>
+Claude Code, Codex, Gemini CLI and Grok CLI already write detailed logs on your Mac; NotchIsland reads
+them locally. For the exact percentages Claude Code shows in `/usage`, you can opt in to *Show live
+limits*, which uses Claude Code's own sign-in. See [docs/privacy.md](docs/privacy.md).
+</details>
 
-## Star History
-<!-- BROKEN: GitHub now restricts the stargazer API for privacy reasons
-<a href="https://www.star-history.com/#TheBoredTeam/boring.notch&Timeline">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=TheBoredTeam/boring.notch&type=Timeline&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=TheBoredTeam/boring.notch&type=Timeline" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=TheBoredTeam/boring.notch&type=Timeline" />
- </picture>
-</a>
--->
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/TheBoredTeam/org-star-chart-updater/main/projects/boring.notch/chart-dark.svg">
-   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/TheBoredTeam/org-star-chart-updater/main/projects/boring.notch/chart-light.svg">
-   <img src="https://raw.githubusercontent.com/TheBoredTeam/org-star-chart-updater/main/projects/boring.notch/chart-light.svg" alt="TheBoredTeam/boring.notch GitHub star history">
- </picture>
+<details>
+<summary><b>Can it track ChatGPT or Grok chats in the browser?</b></summary>
 
-## Support us on Ko-fi!
-<!-- <a href="https://www.buymeacoffee.com/jfxh67wvfxq" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-red.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a> -->
-<a href="https://www.ko-fi.com/alexander5015" target="_blank"><img src="https://github.com/user-attachments/assets//a76175ef-7e93-475a-8b67-4922ba5964c2" alt="Support us on Ko-fi" style="height: 70px !important;width: 346px !important;" ></a>
+Chat apps don't record token usage on your Mac, so there is nothing to read. NotchIsland tracks the
+**Codex** limits of your ChatGPT plan, **Grok CLI** and SuperGrok credits, and API accounts.
+</details>
 
-## 🎉 Acknowledgments
+<details>
+<summary><b>Will it work without a notch?</b></summary>
 
-We would like to express our gratitude to the authors and maintainers of the open-source projects that made this possible. 
+Yes — on external displays and Macs without a notch the island floats at the top center of the screen.
+</details>
 
-## Notable Projects
-- **[MediaRemoteAdapter](https://github.com/ungive/mediaremote-adapter)** –  An open-source project that allowed us to use the Now Playing source in macOS 15.4+
-- **[NotchDrop](https://github.com/Lakr233/NotchDrop)** – An open-source project that has been instrumental in developing the first version of the "Shelf" feature in Boring Notch.
+## Roadmap
 
-For a full list of licenses and attributions, please see the [Third-Party Licenses](./THIRD_PARTY_LICENSES.md) file.
+NotchIsland is in **beta**. Next up: answering an agent's permission prompts from the island, file actions
+on the Shelf (convert, compress, remove background, merge PDFs), a teleprompter, and a world clock. Ideas
+are welcome in [Discussions](https://github.com/prashanth-manchikatla/NotchIsland/discussions/categories/ideas).
 
-### Icon credits: [@maxtron95](https://github.com/maxtron95)
-### Website credits: [@himanshhhhuv](https://github.com/himanshhhhuv)
+## Contributing
 
-- **SwiftUI**: For making us look like coding wizards.
-- **You**: For being awesome and checking out **boring.notch**!
+Bug reports, ideas and pull requests are all welcome. Start with **[CONTRIBUTING.md](CONTRIBUTING.md)** —
+it covers the build, the project layout and the few principles that keep NotchIsland fast. Please follow
+the [Code of Conduct](CODE_OF_CONDUCT.md), and report security issues privately as described in
+[SECURITY.md](SECURITY.md).
 
+## Credits
+
+NotchIsland is built on **[boring.notch](https://github.com/TheBoredTeam/boring.notch)** by TheBoredTeam
+and its contributors, whose work made this project possible. It also uses
+[Defaults](https://github.com/sindresorhus/Defaults),
+[KeyboardShortcuts](https://github.com/sindresorhus/KeyboardShortcuts),
+[LaunchAtLogin](https://github.com/sindresorhus/LaunchAtLogin-Modern),
+[SwiftUI-Introspect](https://github.com/siteline/swiftui-introspect),
+[SkyLightWindow](https://github.com/Lakr233/SkyLightWindow),
+[MacroVisionKit](https://github.com/TheBoredTeam/MacroVisionKit),
+[mediaremote-adapter](https://github.com/ungive/mediaremote-adapter), and code adapted from
+[NotchDrop](https://github.com/Lakr233/NotchDrop), [DynamicNotchKit](https://github.com/MrKai77/DynamicNotchKit),
+[Calendr](https://github.com/pakerwreah/Calendr) and [Parrot](https://github.com/avaidyam/Parrot). See [NOTICE](NOTICE) and
+[THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+
+NotchIsland is an independent project and is not affiliated with Apple, Anthropic, OpenAI, Google or xAI.
+
+## License
+
+NotchIsland is free software, licensed under the **[GNU General Public License v3.0](LICENSE)**.
