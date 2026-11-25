@@ -4,9 +4,11 @@
 //
 //  • API keys you add in Settings › AI Usage live in Hoverbird's own Keychain items
 //    (service "app.hoverbird.ai", one account per provider) — never in a file.
-//  • Reading another app's item (Claude Code's sign-in) makes macOS ask you once;
-//    "Always Allow" remembers Hoverbird by its signature, so rebuilds don't ask again.
-//  Every call blocks while macOS shows its prompt: call off the main thread.
+//  • Claude Code's sign-in is read the way Claude Code itself reads it: through Apple's
+//    `security` tool, which that item already trusts, so macOS doesn't ask for a password.
+//    (Reading it directly would ask after every update: for an app signed without an Apple
+//    Developer ID, "Always Allow" only covers that exact build.)
+//  Every call can block (a prompt, or the tool): call off the main thread.
 //
 
 import Foundation
@@ -39,6 +41,44 @@ enum AIKeychain {
         case errSecUserCanceled, errSecAuthFailed, errSecInteractionNotAllowed: return .denied
         default: return .failed(status)
         }
+    }
+
+    /// Reads another tool's item through `/usr/bin/security`, the way that tool reads it.
+    /// Prints nothing and passes no secret on the command line; gives up after 30 s.
+    static func readWithSecurityTool(service: String) -> ReadResult {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        process.arguments = ["find-generic-password", "-s", service, "-w"]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        process.standardInput = FileHandle.nullDevice
+        do { try process.run() } catch { return .failed(errSecIO) }
+        let timeout = DispatchWorkItem { if process.isRunning { process.terminate() } }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 30, execute: timeout)
+        let output = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        timeout.cancel()
+        switch process.terminationStatus {
+        case 0: break
+        case 44: return .notFound            // errSecItemNotFound
+        default: return .failed(OSStatus(process.terminationStatus))
+        }
+        guard let text = String(data: output, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty else { return .notFound }
+        // `-w` prints data that isn't plain text as hex.
+        if !text.hasPrefix("{"), text.count.isMultiple(of: 2), text.allSatisfy(\.isHexDigit) {
+            var bytes = Data(capacity: text.count / 2)
+            var index = text.startIndex
+            while index < text.endIndex {
+                let next = text.index(index, offsetBy: 2)
+                guard let byte = UInt8(text[index..<next], radix: 16) else { return .found(Data(text.utf8)) }
+                bytes.append(byte)
+                index = next
+            }
+            return .found(bytes)
+        }
+        return .found(Data(text.utf8))
     }
 
     // MARK: Hoverbird's own items (API keys)

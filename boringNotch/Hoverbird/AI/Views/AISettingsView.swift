@@ -26,7 +26,7 @@ struct AISettingsView: View {
             } header: {
                 Text("On this Mac")
             } footer: {
-                aiFootnote("Live limits use the CLI's own sign-in to read the numbers it shows you (Claude: /usage). Claude's sign-in is in your Keychain, so macOS asks once — choose Always Allow. Sign-ins are never saved, changed or sent anywhere except their own provider.")
+                aiFootnote("Live limits use the CLI's own sign-in to read the numbers it shows you (Claude: /usage). Claude's sign-in is read from your Keychain the same way Claude Code reads it, so there's no password prompt. Sign-ins are never saved, changed or sent anywhere except their own provider.")
             }
 
             Section {

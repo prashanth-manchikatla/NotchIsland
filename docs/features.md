@@ -55,7 +55,7 @@ A live view of how much AI you use, read from the logs your tools already keep o
 - **Limits:** the 5-hour and weekly windows with reset times and a *pace marker* (where you'd be at an even
   pace). Without live limits, the current 5-hour window is estimated from your activity.
 - **Live limits (opt-in):** the exact numbers Claude Code shows in `/usage` — read with Claude Code's own
-  sign-in (macOS asks once for Keychain access). Codex and Grok CLI work the same way with their sign-ins.
+  sign-in, read from the Keychain the same way Claude Code reads it. Codex and Grok CLI work the same way with their sign-ins.
 - **Agents:** every running session — *Working*, *Idle* or **Needs you** (waiting for a permission or an
   answer) — with what it's doing, its subagents, its tokens, and a button to bring its app forward.
 - **Tasks:** every prompt you gave an agent, with how long it ran, its tokens and approximate cost

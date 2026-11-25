@@ -269,7 +269,7 @@ enum AIConnect {
         alert.messageText = "Show live \(provider.name) limits?"
         switch provider {
         case .claude:
-            alert.informativeText = "Hoverbird reads the numbers Claude Code shows in /usage (5-hour and weekly limits, with reset times). It uses Claude Code's sign-in, so macOS will ask to let Hoverbird use “Claude Code-credentials” from your Keychain — choose Always Allow.\n\nThe sign-in is only sent to api.anthropic.com, never saved or changed."
+            alert.informativeText = "Hoverbird reads the numbers Claude Code shows in /usage (5-hour and weekly limits, with reset times). It uses the sign-in Claude Code keeps in your Keychain (“Claude Code-credentials”), read the same way Claude Code reads it.\n\nThe sign-in is only sent to api.anthropic.com, never saved or changed."
         case .codex:
             alert.informativeText = "Hoverbird reads your ChatGPT plan's Codex limits using the sign-in in ~/.codex/auth.json. It's only sent to chatgpt.com, never saved or changed."
         default:

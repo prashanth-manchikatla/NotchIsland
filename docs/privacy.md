@@ -31,9 +31,12 @@ Hoverbird can also hide itself from screenshots and screen sharing (*Settings �
 ### Live limits and sign-ins
 
 Live limits read the sign-in the provider's own CLI already keeps on your Mac — Claude Code's in the
-Keychain (`Claude Code-credentials`, so macOS asks you first), Codex's in `~/.codex/auth.json`, Grok
-CLI's in `~/.grok/auth.json`. Hoverbird:
+Keychain (`Claude Code-credentials`), Codex's in `~/.codex/auth.json`, Grok CLI's in
+`~/.grok/auth.json`. Hoverbird:
 
+- reads it only while you have live limits turned on — once per launch, and again when it expires;
+- reads Claude Code's the same way Claude Code does, through Apple's `security` tool, so macOS
+  doesn't show a password prompt;
 - sends that token **only** to its own provider, to read your usage;
 - never writes it to disk, logs it, or shows it;
 - never refreshes it (refreshing would rotate the CLI's sign-in and log it out).

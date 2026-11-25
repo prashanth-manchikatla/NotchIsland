@@ -75,13 +75,14 @@ enum ClaudeLimits {
     private static let lock = NSLock()
     private static var cached: Credentials?
 
-    /// Blocking (the first Keychain read shows macOS's prompt): call off the main thread.
+    /// Blocking: call off the main thread. Read once per launch (and again when it expires).
     private static func readCredentials() -> (Credentials?, String?) {
         var data: Data?
-        switch AIKeychain.read(service: "Claude Code-credentials") {
+        var problem: String?
+        switch AIKeychain.readWithSecurityTool(service: "Claude Code-credentials") {
         case .found(let d): data = d
-        case .denied: return (nil, "Keychain access was denied. Turn live limits off and on to be asked again.")
-        case .notFound, .failed: break
+        case .notFound: break
+        case .denied, .failed: problem = "Couldn't read Claude Code's sign-in from the Keychain."
         }
         if data == nil {
             for name in [".claude/.credentials.json", ".claude/credentials.json"] {
@@ -91,7 +92,7 @@ enum ClaudeLimits {
         guard let data, let obj = AIJSON.object(data),
               let oauth = obj["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String, !token.isEmpty else {
-            return (nil, "Claude Code isn't signed in on this Mac.")
+            return (nil, problem ?? "Claude Code isn't signed in on this Mac.")
         }
         let tier = (oauth["rateLimitTier"] as? String ?? "").lowercased()
         var plan = (oauth["subscriptionType"] as? String)?.capitalized
