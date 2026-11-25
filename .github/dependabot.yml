@@ -7,3 +7,6 @@ updates:
     commit-message:
       prefix: ci
     labels: ["dependencies"]
+    groups:
+      github-actions:
+        patterns: ["*"]
