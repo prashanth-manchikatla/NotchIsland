@@ -1,63 +1,31 @@
-import Foundation
-import Cocoa
-import AsyncXPCConnection
+//
+//  XPCHelperClient.swift
+//  NotchIsland
+//
+//  Originally an XPC bridge to a sandbox-escaping helper (boring.notch).
+//  NotchIsland runs un-sandboxed for personal use, so the helper's work
+//  (Accessibility checks, keyboard + display brightness) now runs in-process.
+//  The public API is unchanged so existing callers keep working.
+//
 
-final class XPCHelperClient: NSObject {
+import ApplicationServices
+import Cocoa
+import CoreGraphics
+import Foundation
+import IOKit
+import IOKit.graphics
+
+final class XPCHelperClient: NSObject, @unchecked Sendable {
     nonisolated static let shared = XPCHelperClient()
-    
-    private let serviceName = "theboringteam.boringnotch.BoringNotchXPCHelper"
-    
-    private var remoteService: RemoteXPCService<BoringNotchXPCHelperProtocol>?
-    private var connection: NSXPCConnection?
+
     private var lastKnownAuthorization: Bool?
     private var monitoringTask: Task<Void, Never>?
-    
+    private let keyboardClient = KeyboardBrightnessClient()
+
     deinit {
-        connection?.invalidate()
         stopMonitoringAccessibilityAuthorization()
     }
-    
-    // MARK: - Connection Management (Main Actor Isolated)
-    
-    @MainActor
-    private func ensureRemoteService() -> RemoteXPCService<BoringNotchXPCHelperProtocol> {
-        if let existing = remoteService {
-            return existing
-        }
-        
-        let conn = NSXPCConnection(serviceName: serviceName)
-        
-        conn.interruptionHandler = { [weak self] in
-            Task { @MainActor in
-                self?.connection = nil
-                self?.remoteService = nil
-            }
-        }
-        
-        conn.invalidationHandler = { [weak self] in
-            Task { @MainActor in
-                self?.connection = nil
-                self?.remoteService = nil
-            }
-        }
-        
-        conn.resume()
-        
-        let service = RemoteXPCService<BoringNotchXPCHelperProtocol>(
-            connection: conn,
-            remoteInterface: BoringNotchXPCHelperProtocol.self
-        )
-        
-        connection = conn
-        remoteService = service
-        return service
-    }
-    
-    @MainActor
-    private func getRemoteService() -> RemoteXPCService<BoringNotchXPCHelperProtocol>? {
-        remoteService
-    }
-    
+
     @MainActor
     private func notifyAuthorizationChange(_ granted: Bool) {
         guard lastKnownAuthorization != granted else { return }
@@ -70,14 +38,15 @@ final class XPCHelperClient: NSObject {
     }
 
     // MARK: - Monitoring
+
     nonisolated func startMonitoringAccessibilityAuthorization(every interval: TimeInterval = 3.0) {
-        // Ensure only one monitor exists
         stopMonitoringAccessibilityAuthorization()
-        monitoringTask = Task.detached { [weak self] in
-            guard let self = self else { return }
+        monitoringTask = Task.detached(priority: .utility) { [weak self] in
             while !Task.isCancelled {
-                // Call the helper method periodically which will notify on change
-                _ = await self.isAccessibilityAuthorized()
+                guard let self else { return }
+                let granted = await self.isAccessibilityAuthorized()
+                // Once granted there is nothing left to watch; stop polling to save energy.
+                if granted { break }
                 do {
                     try await Task.sleep(for: .seconds(interval))
                 } catch { break }
@@ -90,161 +59,194 @@ final class XPCHelperClient: NSObject {
         monitoringTask = nil
     }
 
-    // Expose whether the client is actively monitoring (useful for tests/debug)
-    var isMonitoring: Bool {
-        return monitoringTask != nil
-    }
-    
+    var isMonitoring: Bool { monitoringTask != nil }
+
     // MARK: - Accessibility
-    
+
     nonisolated func requestAccessibilityAuthorization() {
-        Task {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            try? await service.withService { service in
-                service.requestAccessibilityAuthorization()
-            }
-        }
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        AXIsProcessTrustedWithOptions(options)
     }
-    
+
     nonisolated func isAccessibilityAuthorized() async -> Bool {
-        do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            let result: Bool = try await service.withContinuation { service, continuation in
-                service.isAccessibilityAuthorized { authorized in
-                    continuation.resume(returning: authorized)
-                }
-            }
-            await MainActor.run {
-                notifyAuthorizationChange(result)
-            }
-            return result
-        } catch {
-            return false
-        }
+        let result = AXIsProcessTrusted()
+        await MainActor.run { notifyAuthorizationChange(result) }
+        return result
     }
-    
+
     nonisolated func ensureAccessibilityAuthorization(promptIfNeeded: Bool) async -> Bool {
-        do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            let result: Bool = try await service.withContinuation { service, continuation in
-                service.ensureAccessibilityAuthorization(promptIfNeeded) { authorized in
-                    continuation.resume(returning: authorized)
-                }
-            }
-            await MainActor.run {
-                notifyAuthorizationChange(result)
-            }
-            return result
-        } catch {
-            return false
+        if AXIsProcessTrusted() {
+            await MainActor.run { notifyAuthorizationChange(true) }
+            return true
         }
+        if promptIfNeeded {
+            requestAccessibilityAuthorization()
+            // Keep watching so features turn on automatically once the user flips the switch.
+            startMonitoringAccessibilityAuthorization(every: 2.0)
+        }
+        try? await Task.sleep(for: .milliseconds(500))
+        let result = AXIsProcessTrusted()
+        await MainActor.run { notifyAuthorizationChange(result) }
+        return result
     }
-    
+
     // MARK: - Keyboard Brightness
-    
+
     nonisolated func isKeyboardBrightnessAvailable() async -> Bool {
-        do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            return try await service.withContinuation { service, continuation in
-                service.isKeyboardBrightnessAvailable { available in
-                    continuation.resume(returning: available)
-                }
-            }
-        } catch {
-            return false
-        }
+        keyboardClient.isAvailable
     }
-    
+
     nonisolated func currentKeyboardBrightness() async -> Float? {
-        do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            let result: NSNumber? = try await service.withContinuation { service, continuation in
-                service.currentKeyboardBrightness { value in
-                    continuation.resume(returning: value)
-                }
-            }
-            return result?.floatValue
-        } catch {
-            return nil
-        }
+        keyboardClient.currentBrightness()
     }
-    
+
     nonisolated func setKeyboardBrightness(_ value: Float) async -> Bool {
-        do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            return try await service.withContinuation { service, continuation in
-                service.setKeyboardBrightness(value) { success in
-                    continuation.resume(returning: success)
-                }
-            }
-        } catch {
-            return false
-        }
+        keyboardClient.setBrightness(value)
     }
-    
+
     // MARK: - Screen Brightness
-    
+
     nonisolated func isScreenBrightnessAvailable() async -> Bool {
-        do {
-            let service = await MainActor.run {
-                ensureRemoteService()
-            }
-            return try await service.withContinuation { service, continuation in
-                service.isScreenBrightnessAvailable { available in
-                    continuation.resume(returning: available)
-                }
-            }
-        } catch {
-            return false
+        var b: Float = 0
+        if Self.displayServicesGetBrightness(displayID: CGMainDisplayID(), out: &b) { return true }
+        if let io = Self.ioServiceFor(displayID: CGMainDisplayID()) {
+            IOObjectRelease(io)
+            return true
         }
+        return false
     }
-    
+
     nonisolated func currentScreenBrightness() async -> Float? {
-        do {
-            let service = await MainActor.run {
-                ensureRemoteService()
+        var b: Float = 0
+        if Self.displayServicesGetBrightness(displayID: CGMainDisplayID(), out: &b) {
+            return b
+        }
+        if let io = Self.ioServiceFor(displayID: CGMainDisplayID()) {
+            defer { IOObjectRelease(io) }
+            var level: Float = 0
+            if IODisplayGetFloatParameter(io, 0, kIODisplayBrightnessKey as CFString, &level) == kIOReturnSuccess {
+                return level
             }
-            let result: NSNumber? = try await service.withContinuation { service, continuation in
-                service.currentScreenBrightness { value in
-                    continuation.resume(returning: value)
-                }
-            }
-            return result?.floatValue
-        } catch {
+        }
+        return nil
+    }
+
+    nonisolated func setScreenBrightness(_ value: Float) async -> Bool {
+        let clamped = max(0, min(1, value))
+        if Self.displayServicesSetBrightness(displayID: CGMainDisplayID(), value: clamped) {
+            return true
+        }
+        if let io = Self.ioServiceFor(displayID: CGMainDisplayID()) {
+            defer { IOObjectRelease(io) }
+            return IODisplaySetFloatParameter(io, 0, kIODisplayBrightnessKey as CFString, clamped) == kIOReturnSuccess
+        }
+        return false
+    }
+
+    // MARK: - Private helpers (DisplayServices / IOKit)
+
+    private static func displayServicesGetBrightness(displayID: CGDirectDisplayID, out: inout Float) -> Bool {
+        guard let sym = dlsym(DisplayServicesHandle.handle, "DisplayServicesGetBrightness") else { return false }
+        typealias Fn = @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
+        let fn = unsafeBitCast(sym, to: Fn.self)
+        var tmp: Float = 0
+        if fn(displayID, &tmp) == 0 {
+            out = tmp
+            return true
+        }
+        return false
+    }
+
+    private static func displayServicesSetBrightness(displayID: CGDirectDisplayID, value: Float) -> Bool {
+        guard let sym = dlsym(DisplayServicesHandle.handle, "DisplayServicesSetBrightness") else { return false }
+        typealias Fn = @convention(c) (CGDirectDisplayID, Float) -> Int32
+        let fn = unsafeBitCast(sym, to: Fn.self)
+        return fn(displayID, value) == 0
+    }
+
+    private static func ioServiceFor(displayID: CGDirectDisplayID) -> io_service_t? {
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IODisplayConnect"), &iterator) == kIOReturnSuccess else {
             return nil
         }
-    }
-    
-    nonisolated func setScreenBrightness(_ value: Float) async -> Bool {
-        do {
-            let service = await MainActor.run {
-                ensureRemoteService()
+        defer { IOObjectRelease(iterator) }
+
+        while case let service = IOIteratorNext(iterator), service != 0 {
+            let info = IODisplayCreateInfoDictionary(service, 0).takeRetainedValue() as NSDictionary
+            if let vendorID = info[kDisplayVendorID] as? UInt32,
+               let productID = info[kDisplayProductID] as? UInt32,
+               vendorID == CGDisplayVendorNumber(displayID),
+               productID == CGDisplayModelNumber(displayID) {
+                return service
             }
-            return try await service.withContinuation { service, continuation in
-                service.setScreenBrightness(value) { success in
-                    continuation.resume(returning: success)
-                }
-            }
-        } catch {
-            return false
+            IOObjectRelease(service)
         }
+        return nil
+    }
+
+    private enum DisplayServicesHandle {
+        static let handle: UnsafeMutableRawPointer? = {
+            for path in [
+                "/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices",
+                "/System/Library/PrivateFrameworks/DisplayServices.framework/Versions/Current/DisplayServices",
+            ] {
+                if let h = dlopen(path, RTLD_LAZY) { return h }
+            }
+            return nil
+        }()
+    }
+}
+
+// MARK: - Keyboard backlight via CoreBrightness (private)
+
+private final class KeyboardBrightnessClient: @unchecked Sendable {
+    private static let keyboardID: UInt64 = 1
+    private var clientInstance: NSObject?
+    private let getSelector = NSSelectorFromString("brightnessForKeyboard:")
+    private let setSelector = NSSelectorFromString("setBrightness:forKeyboard:")
+
+    init() {
+        var loaded = false
+        for path in [
+            "/System/Library/PrivateFrameworks/CoreBrightness.framework",
+            "/System/Library/PrivateFrameworks/CoreBrightness.framework/CoreBrightness",
+        ] where !loaded {
+            if let bundle = Bundle(path: path) {
+                loaded = bundle.load()
+            }
+        }
+        if loaded, let cls = NSClassFromString("KeyboardBrightnessClient") as? NSObject.Type {
+            clientInstance = cls.init()
+        }
+    }
+
+    var isAvailable: Bool { clientInstance != nil }
+
+    func currentBrightness() -> Float? {
+        guard let clientInstance,
+              let fn = methodIMP(on: clientInstance, selector: getSelector, as: BrightnessGetter.self)
+        else { return nil }
+        return fn(clientInstance, getSelector, Self.keyboardID)
+    }
+
+    func setBrightness(_ value: Float) -> Bool {
+        guard let clientInstance,
+              let fn = methodIMP(on: clientInstance, selector: setSelector, as: BrightnessSetter.self)
+        else { return false }
+        return fn(clientInstance, setSelector, value, Self.keyboardID).boolValue
+    }
+
+    private typealias BrightnessGetter = @convention(c) (NSObject, Selector, UInt64) -> Float
+    private typealias BrightnessSetter = @convention(c) (NSObject, Selector, Float, UInt64) -> ObjCBool
+
+    private func methodIMP<T>(on object: NSObject, selector: Selector, as type: T.Type) -> T? {
+        guard let cls = object_getClass(object),
+              let method = class_getInstanceMethod(cls, selector)
+        else { return nil }
+        return unsafeBitCast(method_getImplementation(method), to: type)
     }
 }
 
 extension Notification.Name {
     static let accessibilityAuthorizationChanged = Notification.Name("accessibilityAuthorizationChanged")
 }
-
-

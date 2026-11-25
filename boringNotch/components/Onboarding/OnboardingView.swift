@@ -14,6 +14,7 @@ enum OnboardingStep {
     case calendarPermission
     case remindersPermission
     case accessibilityPermission
+    case screenRecordingPermission
     case musicPermission
     case finished
 }
@@ -40,7 +41,7 @@ struct OnboardingView: View {
                 PermissionRequestView(
                     icon: Image(systemName: "camera.fill"),
                     title: "Enable Camera Access",
-                    description: "Boring Notch includes a mirror feature that lets you quickly check your appearance using your camera, right from the notch. Camera access is required only to show this live preview. You can turn the mirror feature on or off at any time in the app.",
+                    description: "NotchIsland includes a mirror feature that lets you quickly check your appearance using your camera, right from the notch. Camera access is required only to show this live preview. You can turn the mirror feature on or off at any time in the app.",
                     privacyNote: "Your camera is never used without your consent, and nothing is recorded or stored.",
                     onAllow: {
                         Task {
@@ -62,7 +63,7 @@ struct OnboardingView: View {
                 PermissionRequestView(
                     icon: Image(systemName: "calendar"),
                     title: "Enable Calendar Access",
-                    description: "Boring Notch can show all your upcoming events in one place. Access to your calendar is needed to display your schedule.",
+                    description: "NotchIsland can show all your upcoming events in one place. Access to your calendar is needed to display your schedule.",
                     privacyNote: "Your calendar data is only used to show your events and is never shared.",
                     onAllow: {
                         Task {
@@ -84,7 +85,7 @@ struct OnboardingView: View {
                     PermissionRequestView(
                         icon: Image(systemName: "checklist"),
                         title: "Enable Reminders Access",
-                        description: "Boring Notch can show your scheduled reminders alongside your calendar events. Access to Reminders is needed to display your reminders.",
+                        description: "NotchIsland can show your scheduled reminders alongside your calendar events. Access to Reminders is needed to display your reminders.",
                         privacyNote: "Your reminders data is only used to show your reminders and is never shared.",
                         onAllow: {
                             Task {
@@ -106,14 +107,33 @@ struct OnboardingView: View {
                 PermissionRequestView(
                     icon: Image(systemName: "hand.raised.fill"),
                     title: "Enable Accessibility Access",
-                    description: "Accessibility access is required to replace system notifications with the Boring Notch HUD. This allows the app to intercept media and brightness events to display custom HUD overlays.",
-                    privacyNote: "Accessibility access is used only to improve media and brightness notifications. No data is collected or shared.",
+                    description: "NotchIsland uses Accessibility to mirror notifications (including order and ride updates your iPhone forwards to this Mac), show your iPhone's Live Activities from the menu bar, replace the volume/brightness HUD, and open the clipboard with ⌘C ⌘C.",
+                    privacyNote: "Everything stays on this Mac. Nothing is collected or sent anywhere.",
                     onAllow: {
                         Task {
                             await requestAccessibilityPermission()
                             withAnimation(.easeInOut(duration: 0.6)) {
-                                step = .musicPermission
+                                step = .screenRecordingPermission
                             }
+                        }
+                    },
+                    onSkip: {
+                        withAnimation(.easeInOut(duration: 0.6)) {
+                            step = .screenRecordingPermission
+                        }
+                    }
+                )
+                .transition(.opacity)
+            case .screenRecordingPermission:
+                PermissionRequestView(
+                    icon: Image(systemName: "record.circle"),
+                    title: "Enable Screen Recording",
+                    description: "Needed for the screenshot and screen-recording buttons in the island (selection, window and full screen).",
+                    privacyNote: "NotchIsland only captures when you press a capture button. Files are saved to your Desktop.",
+                    onAllow: {
+                        _ = CGRequestScreenCaptureAccess()
+                        withAnimation(.easeInOut(duration: 0.6)) {
+                            step = .musicPermission
                         }
                     },
                     onSkip: {

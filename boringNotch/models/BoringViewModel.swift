@@ -5,9 +5,13 @@
 //  Created by Harsh Vardhan  Goswami  on 04/08/24.
 //
 
+import AVFoundation
 import Combine
 import Defaults
+import OSLog
 import SwiftUI
+
+let islandLog = Logger(subsystem: "app.notchisland.mac", category: "island")
 
 class BoringViewModel: NSObject, ObservableObject {
     @ObservedObject var coordinator = BoringViewCoordinator.shared
@@ -129,53 +133,58 @@ class BoringViewModel: NSObject, ObservableObject {
     }
 
     func toggleCameraPreview() {
-        if isRequestingAuthorization {
+        // NotchIsland: one click → camera. The view switches immediately (showing a
+        // placeholder until frames arrive) instead of waiting for the session.
+        if isCameraExpanded {
+            if webcamManager.isRecording { webcamManager.stopRecording() } // saves the video, then the camera stops
+            webcamManager.stopSession()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { isCameraExpanded = false }
             return
         }
-
-        switch webcamManager.authorizationStatus {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            if webcamManager.isSessionRunning {
-                webcamManager.stopSession()
-                isCameraExpanded = false
-            } else if webcamManager.cameraAvailable {
-                webcamManager.startSession()
-                isCameraExpanded = true
+            webcamManager.authorizationStatus = .authorized
+            webcamManager.checkCameraAvailability()
+            webcamManager.startSession()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { isCameraExpanded = true }
+
+        case .notDetermined:
+            guard !isRequestingAuthorization else { return }
+            isRequestingAuthorization = true
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.isRequestingAuthorization = false
+                    self.webcamManager.authorizationStatus = granted ? .authorized : .denied
+                    guard granted else { return }
+                    self.webcamManager.checkCameraAvailability()
+                    self.webcamManager.startSession()
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { self.isCameraExpanded = true }
+                }
             }
 
         case .denied, .restricted:
             DispatchQueue.main.async {
                 NSApp.setActivationPolicy(.regular)
                 NSApp.activate(ignoringOtherApps: true)
-
                 let alert = NSAlert()
                 alert.messageText = "Camera Access Required"
-                alert.informativeText = "Please allow camera access in System Settings."
+                alert.informativeText = "Please allow camera access for NotchIsland in System Settings."
                 alert.addButton(withTitle: "Open Settings")
                 alert.addButton(withTitle: "Cancel")
-
-                if alert.runModal() == .alertFirstButtonReturn {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
-                        NSWorkspace.shared.open(url)
-                    }
+                if alert.runModal() == .alertFirstButtonReturn,
+                   let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
+                    NSWorkspace.shared.open(url)
                 }
-
                 NSApp.setActivationPolicy(.accessory)
                 NSApp.deactivate()
             }
 
-        case .notDetermined:
-            isRequestingAuthorization = true
-            webcamManager.checkAndRequestVideoAuthorization()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.isRequestingAuthorization = false
-            }
-
-        default:
+        @unknown default:
             break
         }
     }
-    
+
     func isMouseHovering(position: NSPoint = NSEvent.mouseLocation) -> Bool {
         let screenFrame = getScreenFrame(screenUUID)
         if let frame = screenFrame {
@@ -190,6 +199,10 @@ class BoringViewModel: NSObject, ObservableObject {
     }
 
     func open() {
+        if notchState != .open {
+            let p = NSEvent.mouseLocation
+            islandLog.notice("open (pointer \(Int(p.x), privacy: .public),\(Int(p.y), privacy: .public))")
+        }
         self.notchSize = openNotchSize
         self.notchState = .open
         
@@ -201,6 +214,15 @@ class BoringViewModel: NSObject, ObservableObject {
         // Do not close while a share picker or sharing service is active
         if SharingStateManager.shared.preventNotchClose {
             return
+        }
+        if notchState != .closed {
+            let p = NSEvent.mouseLocation
+            islandLog.notice("close (pointer \(Int(p.x), privacy: .public),\(Int(p.y), privacy: .public))")
+            IslandMemory.trimSoon()
+        }
+        if isCameraExpanded {
+            webcamManager.stopSession()
+            isCameraExpanded = false
         }
         self.notchSize = getClosedNotchSize(screenUUID: self.screenUUID)
         self.closedNotchSize = self.notchSize

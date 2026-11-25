@@ -10,7 +10,6 @@ import Defaults
 import EventKit
 import KeyboardShortcuts
 import LaunchAtLogin
-import Sparkle
 import SwiftUI
 import SwiftUIIntrospect
 
@@ -18,17 +17,14 @@ struct SettingsView: View {
     @State private var selectedTab = "General"
     @State private var accentColorUpdateTrigger = UUID()
 
-    let updaterController: SPUStandardUpdaterController?
-
-    init(updaterController: SPUStandardUpdaterController? = nil) {
-        self.updaterController = updaterController
-    }
-
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedTab) {
                 NavigationLink(value: "General") {
                     Label("General", systemImage: "gear")
+                }
+                NavigationLink(value: "Island") {
+                    Label("Island", systemImage: "capsule.fill")
                 }
                 NavigationLink(value: "Appearance") {
                     Label("Appearance", systemImage: "eye")
@@ -38,6 +34,33 @@ struct SettingsView: View {
                 }
                 NavigationLink(value: "Calendar") {
                     Label("Calendar", systemImage: "calendar")
+                }
+                NavigationLink(value: "iPhone") {
+                    Label("iPhone & Notifications", systemImage: "iphone.radiowaves.left.and.right")
+                }
+                NavigationLink(value: "LiveActivities") {
+                    Label("Live Activities", systemImage: "timer")
+                }
+                NavigationLink(value: "Awake") {
+                    Label("Awake", systemImage: "cup.and.saucer.fill")
+                }
+                NavigationLink(value: "AI") {
+                    Label("AI Usage", systemImage: "sparkle")
+                }
+                NavigationLink(value: "Meeting") {
+                    Label("Microphone & Camera", systemImage: "mic.fill")
+                }
+                NavigationLink(value: "Focus") {
+                    Label("Focus", systemImage: "brain.head.profile")
+                }
+                NavigationLink(value: "Downloads") {
+                    Label("Downloads & Drives", systemImage: "arrow.down.circle")
+                }
+                NavigationLink(value: "Clipboard") {
+                    Label("Clipboard", systemImage: "doc.on.clipboard")
+                }
+                NavigationLink(value: "Capture") {
+                    Label("Capture", systemImage: "camera.viewfinder")
                 }
                 NavigationLink(value: "HUD") {
                     Label("HUDs", systemImage: "dial.medium.fill")
@@ -57,6 +80,9 @@ struct SettingsView: View {
                 // NavigationLink(value: "Extensions") {
                 //     Label("Extensions", systemImage: "puzzlepiece.extension")
                 // }
+                NavigationLink(value: "Permissions") {
+                    Label("Permissions", systemImage: "lock.shield")
+                }
                 NavigationLink(value: "Advanced") {
                     Label("Advanced", systemImage: "gearshape.2")
                 }
@@ -73,6 +99,28 @@ struct SettingsView: View {
                 switch selectedTab {
                 case "General":
                     GeneralSettings()
+                case "Island":
+                    IslandAppearanceSettings()
+                case "iPhone":
+                    IPhoneNotificationSettings()
+                case "LiveActivities":
+                    LiveActivitySettings()
+                case "Awake":
+                    AwakeSettings()
+                case "AI":
+                    AISettingsView()
+                case "Meeting":
+                    MeetingSettingsView()
+                case "Focus":
+                    FocusSettingsView()
+                case "Downloads":
+                    DownloadsDrivesSettingsView()
+                case "Clipboard":
+                    ClipboardSettings()
+                case "Capture":
+                    CaptureSettings()
+                case "Permissions":
+                    PermissionsSettings()
                 case "Appearance":
                     Appearance()
                 case "Media":
@@ -92,15 +140,7 @@ struct SettingsView: View {
                 case "Advanced":
                     Advanced()
                 case "About":
-                    if let controller = updaterController {
-                        About(updaterController: controller)
-                    } else {
-                        // Fallback with a default controller
-                        About(
-                            updaterController: SPUStandardUpdaterController(
-                                startingUpdater: false, updaterDelegate: nil,
-                                userDriverDelegate: nil))
-                    }
+                    About()
                 default:
                     GeneralSettings()
                 }
@@ -371,6 +411,7 @@ struct Charge: View {
             } header: {
                 Text("Battery Information")
             }
+            BatteryAlertSettingsSection() // NotchIsland
         }
         .onAppear {
             Task { @MainActor in
@@ -834,7 +875,6 @@ func lighterColor(from nsColor: NSColor, amount: CGFloat = 0.14) -> Color {
 
 struct About: View {
     @State private var showBuildNumber: Bool = false
-    let updaterController: SPUStandardUpdaterController
     @Environment(\.openWindow) var openWindow
     var body: some View {
         VStack {
@@ -865,17 +905,15 @@ struct About: View {
                     Text("Version info")
                 }
 
-                UpdaterSettingsView(updater: updaterController.updater)
-
                 HStack(spacing: 30) {
                     Spacer(minLength: 0)
                     Button {
-                        if let url = URL(string: "https://github.com/TheBoredTeam/boring.notch") {
+                        if let url = URL(string: "https://github.com/prashanth-manchikatla/NotchIsland") {
                             NSWorkspace.shared.open(url)
                         }
                     } label: {
                         VStack(spacing: 5) {
-                            Image("Github")
+                            Image(systemName: "chevron.left.forwardslash.chevron.right")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 18)
@@ -889,7 +927,7 @@ struct About: View {
             }
             VStack(spacing: 0) {
                 Divider()
-                Text("Made with 🫶🏻 by not so boring not.people")
+                Text("NotchIsland · personal build based on boring.notch by TheBoredTeam (GPL-3.0)")
                     .foregroundStyle(.secondary)
                     .padding(.top, 5)
                     .padding(.bottom, 7)
@@ -903,7 +941,6 @@ struct About: View {
             //                openWindow(id: "onboarding")
             //            }
             //            .controlSize(.extraLarge)
-            CheckForUpdatesView(updater: updaterController.updater)
         }
         .navigationTitle("About")
     }
@@ -1162,8 +1199,6 @@ struct Appearance: View {
     @Default(.mirrorShape) var mirrorShape
     @Default(.sliderColor) var sliderColor
     @Default(.useMusicVisualizer) var useMusicVisualizer
-    @Default(.customVisualizers) var customVisualizers
-    @Default(.selectedVisualizer) var selectedVisualizer
 
     let icons: [String] = ["logo2"]
     @State private var selectedIcon: String = "logo2"
@@ -1203,182 +1238,8 @@ struct Appearance: View {
             }
 
             Section {
-                Toggle(
-                    "Use music visualizer spectrogram",
-                    isOn: $useMusicVisualizer.animation()
-                )
-                .disabled(true)
-                if !useMusicVisualizer {
-                    if customVisualizers.count > 0 {
-                        Picker(
-                            "Selected animation",
-                            selection: $selectedVisualizer
-                        ) {
-                            ForEach(
-                                customVisualizers,
-                                id: \.self
-                            ) { visualizer in
-                                Text(visualizer.name)
-                                    .tag(visualizer)
-                            }
-                        }
-                    } else {
-                        HStack {
-                            Text("Selected animation")
-                            Spacer()
-                            Text("No custom animation available")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            } header: {
-                HStack {
-                    Text("Custom music live activity animation")
-                    customBadge(text: "Coming soon")
-                }
-            }
-
-            Section {
-                List {
-                    ForEach(customVisualizers, id: \.self) { visualizer in
-                        HStack {
-                            LottieView(
-                                url: visualizer.url, speed: visualizer.speed,
-                                loopMode: .loop
-                            )
-                            .frame(width: 30, height: 30, alignment: .center)
-                            Text(visualizer.name)
-                            Spacer(minLength: 0)
-                            if selectedVisualizer == visualizer {
-                                Text("selected")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.trailing, 8)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .padding(.vertical, 2)
-                        .background(
-                            selectedListVisualizer != nil
-                                ? selectedListVisualizer == visualizer
-                                    ? Color.effectiveAccent : Color.clear : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 5)
-                        )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if selectedListVisualizer == visualizer {
-                                selectedListVisualizer = nil
-                                return
-                            }
-                            selectedListVisualizer = visualizer
-                        }
-                    }
-                }
-                .safeAreaPadding(
-                    EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0)
-                )
-                .frame(minHeight: 120)
-                .actionBar {
-                    HStack(spacing: 5) {
-                        Button {
-                            name = ""
-                            url = ""
-                            speed = 1.0
-                            isPresented.toggle()
-                        } label: {
-                            Image(systemName: "plus")
-                                .foregroundStyle(.secondary)
-                                .contentShape(Rectangle())
-                        }
-                        Divider()
-                        Button {
-                            if selectedListVisualizer != nil {
-                                let visualizer = selectedListVisualizer!
-                                selectedListVisualizer = nil
-                                customVisualizers.remove(
-                                    at: customVisualizers.firstIndex(of: visualizer)!)
-                                if visualizer == selectedVisualizer && customVisualizers.count > 0 {
-                                    selectedVisualizer = customVisualizers[0]
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "minus")
-                                .foregroundStyle(.secondary)
-                                .contentShape(Rectangle())
-                        }
-                    }
-                }
-                .controlSize(.small)
-                .buttonStyle(PlainButtonStyle())
-                .overlay {
-                    if customVisualizers.isEmpty {
-                        Text("No custom visualizer")
-                            .foregroundStyle(Color(.secondaryLabelColor))
-                            .padding(.bottom, 22)
-                    }
-                }
-                .sheet(isPresented: $isPresented) {
-                    VStack(alignment: .leading) {
-                        Text("Add new visualizer")
-                            .font(.largeTitle.bold())
-                            .padding(.vertical)
-                        TextField("Name", text: $name)
-                        TextField("Lottie JSON URL", text: $url)
-                        HStack {
-                            Text("Speed")
-                            Spacer(minLength: 80)
-                            Text("\(speed, specifier: "%.1f")s")
-                                .multilineTextAlignment(.trailing)
-                                .foregroundStyle(.secondary)
-                            Slider(value: $speed, in: 0...2, step: 0.1)
-                        }
-                        .padding(.vertical)
-                        HStack {
-                            Button {
-                                isPresented.toggle()
-                            } label: {
-                                Text("Cancel")
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                            }
-
-                            Button {
-                                let visualizer: CustomVisualizer = .init(
-                                    UUID: UUID(),
-                                    name: name,
-                                    url: URL(string: url)!,
-                                    speed: speed
-                                )
-
-                                if !customVisualizers.contains(visualizer) {
-                                    customVisualizers.append(visualizer)
-                                }
-
-                                isPresented.toggle()
-                            } label: {
-                                Text("Add")
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                            }
-                            .buttonStyle(BorderedProminentButtonStyle())
-                        }
-                    }
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .controlSize(.extraLarge)
-                    .padding()
-                }
-            } header: {
-                HStack(spacing: 0) {
-                    Text("Custom vizualizers (Lottie)")
-                    if !Defaults[.customVisualizers].isEmpty {
-                        Text(" – \(Defaults[.customVisualizers].count)")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            Section {
                 Defaults.Toggle(key: .showMirror) {
-                    Text("Enable boring mirror")
+                    Text("Enable camera mirror")
                 }
                     .disabled(!checkVideoInput())
                 Picker("Mirror shape", selection: $mirrorShape) {
@@ -1573,7 +1434,7 @@ struct Advanced: View {
                     ForEach(icons, id: \.self) { icon in
                         Spacer()
                         VStack {
-                            Image(icon)
+                            Image(nsImage: NSApp.applicationIconImage ?? NSImage())
                                 .resizable()
                                 .frame(width: 80, height: 80)
                                 .background(
@@ -1599,7 +1460,7 @@ struct Advanced: View {
                             withAnimation {
                                 selectedIcon = icon
                             }
-                            NSApp.applicationIconImage = NSImage(named: icon)
+                            _ = icon
                         }
                         Spacer()
                     }
@@ -1794,6 +1655,3 @@ func warningBadge(_ text: String, _ description: String) -> some View {
     }
 }
 
-#Preview {
-    HUD()
-}

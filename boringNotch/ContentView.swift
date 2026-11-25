@@ -23,11 +23,20 @@ struct ContentView: View {
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var brightnessManager = BrightnessManager.shared
     @ObservedObject var volumeManager = VolumeManager.shared
+    @ObservedObject var hub = IslandActivityHub.shared
+    @ObservedObject var proximity = ProximityMonitor.shared
+    @ObservedObject var interactionLock = IslandInteractionLock.shared
+    @Default(.islandMotionStyle) var motionStyle
+    @State private var pillWidth: CGFloat = 0
     @State private var hoverTask: Task<Void, Never>?
     @State private var isHovering: Bool = false
     @State private var anyDropDebounceTask: Task<Void, Never>?
 
     @State private var gestureProgress: CGFloat = .zero
+    /// NotchIsland: when the pointer left the open island (for the close safety net).
+    @State private var awaySince: Date?
+    /// The pointer has been over the open island at least once (shortcut-opened islands wait for that).
+    @State private var visitedSinceOpen = false
 
     @State private var haptics: Bool = false
 
@@ -38,7 +47,38 @@ struct ContentView: View {
     @Default(.showNotHumanFace) var showNotHumanFace
 
     // Shared interactive spring for movement/resizing to avoid conflicting animations
-    private let animationSpring = Animation.interactiveSpring(response: 0.38, dampingFraction: 0.8, blendDuration: 0)
+    private var animationSpring: Animation { motionStyle.interactive }
+
+    /// The island reacts as the pointer approaches (proximity) and when hovered.
+    private var proximityScale: CGFloat {
+        guard vm.notchState == .closed, !vm.hideOnClosed else { return 1 }
+        if isHovering { return 1.07 }
+        if let near = proximity.nearScreenUUID, near == vm.screenUUID || (vm.screenUUID == nil && near == NSScreen.main?.displayUUID) {
+            return 1.04
+        }
+        return 1
+    }
+
+    /// Opening the island while a live activity runs lands on that activity's tab.
+    private func tab(for activity: IslandCompactActivity?) -> NotchViews? {
+        switch activity {
+        case .recording?, .recordingCountdown?: return .capture
+        case .timer?, .timerRinging?, .stopwatch?: return .timers
+        case .order?, .iPhoneActivity?, .banner?: return .notifications
+        case .calendarSoon?: return .calendar
+        case .monitor?: return .monitor
+        case .aiAttention?, .aiWorking?, .aiUsage?: return .ai
+        case .focus?: return .timers
+        case .pill(let pill)?:
+            switch pill.kind {
+            case .captureSaved: return .capture
+            case .copied: return .clipboard
+            case .download: return Defaults[.boringShelf] ? .shelf : nil
+            default: return nil
+            }
+        default: return nil
+        }
+    }
 
     private let extendedHoverPadding: CGFloat = 30
     private let zeroHeightHoverPadding: CGFloat = 10
@@ -64,7 +104,7 @@ struct ContentView: View {
         if coordinator.expandingView.type == .battery && coordinator.expandingView.show
             && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
         {
-            chinWidth = 640
+            chinWidth = vm.closedNotchSize.width + 2 * 78 + 44
         } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
@@ -89,6 +129,17 @@ struct ContentView: View {
         }()
         
         ZStack(alignment: .top) {
+            if vm.notchState == .closed, !vm.hideOnClosed, let secondary = hub.secondary, pillWidth > 0 {
+                let d = max(18, vm.effectiveClosedNotchHeight - 6)
+                IslandMinimalBubble(activity: secondary, diameter: d)
+                    .offset(x: pillWidth / 2 + 7 + d / 2, y: 3)
+                    .onTapGesture {
+                        if let tab = tab(for: secondary) { coordinator.currentView = tab }
+                        doOpen(choosingTab: false)
+                    }
+                    .transition(.scale(scale: 0.3).combined(with: .opacity))
+                    .zIndex(3)
+            }
             VStack(spacing: 0) {
                 let mainLayout = NotchLayout()
                     .frame(alignment: .top)
@@ -100,8 +151,12 @@ struct ContentView: View {
                         : cornerRadiusInsets.closed.bottom
                     )
                     .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
-                    .background(.black)
+                    .background { IslandBackground(isOpen: vm.notchState == .open) }
                     .clipShape(currentNotchShape)
+                    .overlay { IslandRim(shape: currentNotchShape, visible: vm.notchState == .open) }
+                    .background(GeometryReader { geo in
+                        Color.clear.preference(key: IslandPillWidthKey.self, value: geo.size.width)
+                    })
                     .overlay(alignment: .top) {
                         Rectangle()
                             .fill(.black)
@@ -120,8 +175,8 @@ struct ContentView: View {
                 mainLayout
                     .frame(height: vm.notchState == .open ? vm.notchSize.height : nil)
                     .conditionalModifier(true) { view in
-                        let openAnimation = Animation.spring(response: 0.42, dampingFraction: 0.8, blendDuration: 0)
-                        let closeAnimation = Animation.spring(response: 0.45, dampingFraction: 1.0, blendDuration: 0)
+                        let openAnimation = motionStyle.open
+                        let closeAnimation = motionStyle.close
                         
                         return view
                             .animation(vm.notchState == .open ? openAnimation : closeAnimation, value: vm.notchState)
@@ -153,7 +208,7 @@ struct ContentView: View {
                                 try? await Task.sleep(for: .milliseconds(100))
                                 guard !Task.isCancelled else { return }
                                 await MainActor.run {
-                                    if self.vm.notchState == .open && !self.isHovering && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose {
+                                    if self.vm.notchState == .open && !self.isHovering && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose && !IslandInteractionLock.shared.isLocked && !IslandPinState.shared.pinned {
                                         self.vm.close()
                                     }
                                 }
@@ -174,7 +229,7 @@ struct ContentView: View {
                                 try? await Task.sleep(for: .milliseconds(100))
                                 guard !Task.isCancelled else { return }
                                 await MainActor.run {
-                                    if !self.vm.isBatteryPopoverActive && !self.isHovering && self.vm.notchState == .open && !SharingStateManager.shared.preventNotchClose {
+                                    if !self.vm.isBatteryPopoverActive && !self.isHovering && self.vm.notchState == .open && !SharingStateManager.shared.preventNotchClose && !IslandPinState.shared.pinned {
                                         self.vm.close()
                                     }
                                 }
@@ -206,11 +261,51 @@ struct ContentView: View {
         .frame(maxWidth: windowSize.width, maxHeight: windowSize.height, alignment: .top)
         .compositingGroup()
         .scaleEffect(
-            x: gestureScale,
-            y: gestureScale,
+            x: gestureScale * proximityScale,
+            y: gestureScale * proximityScale,
             anchor: .top
         )
         .animation(.smooth, value: gestureProgress)
+        .animation(animationSpring, value: proximityScale)
+        .animation(animationSpring, value: hub.secondary)
+        .onPreferenceChange(IslandPillWidthKey.self) { width in
+            if abs(width - pillWidth) > 0.5 { pillWidth = width }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .islandTopEdgeHit)) { note in
+            guard vm.notchState == .closed, !coordinator.firstLaunch,
+                  let uuid = note.object as? String,
+                  uuid == (vm.screenUUID ?? NSScreen.main?.displayUUID) else { return }
+            if Defaults[.enableHaptics] { haptics.toggle() }
+            doOpen()
+        }
+        // NotchIsland: close safety net — runs only while the island is open.
+        .task(id: vm.notchState) {
+            awaySince = nil
+            visitedSinceOpen = false
+            guard vm.notchState == .open else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(450))
+                if Task.isCancelled { return }
+                closeIfAbandoned()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .islandCloseAll)) { _ in
+            hoverTask?.cancel()
+            isHovering = false
+            if vm.notchState == .open { vm.close() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .islandOpenTab)) { note in
+            guard let tab = note.object as? NotchViews else { return }
+            let mouseScreen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }?.displayUUID
+            guard !Defaults[.showOnAllDisplays] || vm.screenUUID == mouseScreen else { return }
+            coordinator.currentView = tab
+            doOpen(choosingTab: false)
+        }
+        .onChange(of: interactionLock.menuOpen) { _, open in
+            // A menu from the island just closed: collapse if the pointer left meanwhile.
+            guard !open, vm.notchState == .open, !isHovering else { return }
+            if !SharingStateManager.shared.preventNotchClose && !vm.isBatteryPopoverActive && !IslandPinState.shared.pinned { vm.close() }
+        }
         .background(dragDetector)
         .preferredColorScheme(.dark)
         .environmentObject(vm)
@@ -235,7 +330,7 @@ struct ContentView: View {
                 }
 
                 vm.dropEvent = false
-                if !SharingStateManager.shared.preventNotchClose {
+                if !SharingStateManager.shared.preventNotchClose && !IslandPinState.shared.pinned {
                     vm.close()
                 }
             }
@@ -260,33 +355,15 @@ struct ContentView: View {
                     if coordinator.expandingView.type == .battery && coordinator.expandingView.show
                         && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
                     {
-                        HStack(spacing: 0) {
-                            HStack {
-                                Text(batteryModel.statusText)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.white)
-                            }
-
-                            Rectangle()
-                                .fill(.black)
-                                .frame(width: vm.closedNotchSize.width + 10)
-
-                            HStack {
-                                BoringBatteryView(
-                                    batteryWidth: 30,
-                                    isCharging: batteryModel.isCharging,
-                                    isInLowPowerMode: batteryModel.isInLowPowerMode,
-                                    isPluggedIn: batteryModel.isPluggedIn,
-                                    levelBattery: batteryModel.levelBattery,
-                                    isForNotification: true
-                                )
-                            }
-                            .frame(width: 76, alignment: .trailing)
-                        }
-                        .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
+                        // NotchIsland: iPhone-style "Charging · 82% [battery]" around the camera.
+                        IslandChargingActivity()
+                            .transition(.blurReplace)
                       } else if coordinator.sneakPeek.show && Defaults[.inlineHUD] && (coordinator.sneakPeek.type != .music) && (coordinator.sneakPeek.type != .battery) && vm.notchState == .closed {
                           InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering, gestureProgress: $gestureProgress)
                               .transition(.opacity)
+                      } else if vm.notchState == .closed, let activity = hub.primary, !vm.hideOnClosed || activity == .recording {
+                          IslandCompactActivityView(activity: activity)
+                              .id(activityIdentity(activity))
                       } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music) && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle) && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed {
                           MusicLiveActivity()
                               .frame(alignment: .center)
@@ -343,12 +420,39 @@ struct ContentView: View {
               }
               .zIndex(2)
             if vm.notchState == .open {
-                VStack {
-                    switch coordinator.currentView {
-                    case .home:
-                        NotchHomeView(albumArtNamespace: albumArtNamespace)
-                    case .shelf:
-                        ShelfView()
+                HStack(alignment: .top, spacing: 10) {
+                    VStack {
+                        switch coordinator.currentView {
+                        case .home:
+                            NotchHomeView(albumArtNamespace: albumArtNamespace)
+                        case .shelf:
+                            ShelfView()
+                        case .clipboard:
+                            ClipboardTabView()
+                        case .capture:
+                            CaptureTabView()
+                        case .notifications:
+                            NotificationsTabView()
+                        case .timers:
+                            TimerTabView()
+                        case .calendar:
+                            IslandCalendarSection()
+                        case .shortcuts:
+                            ShortcutsTabView()
+                        case .monitor:
+                            MonitorTabView()
+                        case .ai:
+                            AITabView()
+                        case .notes:
+                            NotesTabView()
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    // NotchIsland: the mirror stays visible on every tab (Home shows its own).
+                    if vm.isCameraExpanded && coordinator.currentView != .home {
+                        CameraPreviewView(webcamManager: webcamManager)
+                            .frame(width: 116, height: 116)
+                            .transition(.scale(scale: 0.6).combined(with: .opacity))
                     }
                 }
                 .transition(
@@ -463,8 +567,10 @@ struct ContentView: View {
                                 .frame(width: 16, height: 12)
                         }
                 } else {
-                    LottieAnimationContainer()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    Image(systemName: "waveform")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.gray)
+                        .symbolEffect(.variableColor.iterative, isActive: musicManager.isPlaying)
                 }
             }
             .frame(
@@ -502,13 +608,74 @@ struct ContentView: View {
         }
     }
 
-    private func doOpen() {
-        withAnimation(animationSpring) {
+    private func doOpen(choosingTab: Bool = true) {
+        if choosingTab, vm.notchState == .closed, let tab = tab(for: hub.primary) {
+            coordinator.currentView = tab
+            if case .banner(let banner)? = hub.primary { NotificationMirror.shared.focus(banner.notificationID) }
+        }
+        withAnimation(motionStyle.open) {
             vm.open()
         }
     }
 
+    private func activityIdentity(_ activity: IslandCompactActivity) -> String {
+        switch activity {
+        case .pill(let pill): return "pill-\(pill.id)"
+        case .banner(let banner): return "banner-\(banner.id)"
+        case .order(let id): return "order-\(id)"
+        case .iPhoneActivity(let id): return "la-\(id)"
+        case .calendarSoon(let id): return "cal-\(id)"
+        case .recordingCountdown: return "countdown"
+        default: return String(describing: activity)
+        }
+    }
+
     // MARK: - Hover Management
+
+    /// The island closes once the pointer has really been away for a moment — even when the
+    /// one-off close on leaving was skipped (a popover, a menu or a Notification Center sync was
+    /// up at that instant) or a "keep open" flag went stale. Legit reasons to stay open still
+    /// count, but only for a while; pinning keeps it open for good.
+    private func closeIfAbandoned() {
+        guard vm.notchState == .open, !IslandPinState.shared.pinned, !coordinator.firstLaunch else {
+            awaySince = nil
+            return
+        }
+        let mouse = NSEvent.mouseLocation
+        guard let screen = NSScreen.screens.first(where: { $0.displayUUID == vm.screenUUID }) ?? NSScreen.main else { return }
+        let size = vm.notchSize
+        let island = CGRect(x: screen.frame.midX - size.width / 2 - 12, y: screen.frame.maxY - size.height - 24,
+                            width: size.width + 24, height: size.height + 24)
+        let popovers = NSApp.windows.filter { $0.isVisible && NSStringFromClass(type(of: $0)).contains("Popover") }
+        if island.contains(mouse) || popovers.contains(where: { $0.frame.insetBy(dx: -8, dy: -8).contains(mouse) })
+            || NSEvent.pressedMouseButtons != 0 || vm.anyDropZoneTargeting {
+            if island.contains(mouse) { visitedSinceOpen = true }
+            awaySince = nil
+            return
+        }
+        // Opened from a shortcut or the menu bar and not touched yet: leave it until you do.
+        guard visitedSinceOpen else { return }
+        // A popover that's already gone can't keep the island open.
+        if vm.isBatteryPopoverActive && popovers.isEmpty { vm.isBatteryPopoverActive = false }
+        let lock = IslandInteractionLock.shared
+        let grace: TimeInterval
+        if SharingStateManager.shared.preventNotchClose { grace = 60 }
+        else if lock.menuOpen { grace = 30 }
+        else if lock.automationActive { grace = 10 }
+        else if !popovers.isEmpty { grace = 6 }
+        else { grace = 0.8 }
+        let now = Date()
+        guard let since = awaySince else {
+            awaySince = now
+            return
+        }
+        guard now.timeIntervalSince(since) >= grace else { return }
+        awaySince = nil
+        hoverTask?.cancel()
+        isHovering = false
+        vm.isBatteryPopoverActive = false
+        vm.close()
+    }
 
     private func handleHover(_ hovering: Bool) {
         if coordinator.firstLaunch { return }
@@ -549,7 +716,7 @@ struct ContentView: View {
                         self.isHovering = false
                     }
                     
-                    if self.vm.notchState == .open && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose {
+                    if self.vm.notchState == .open && !self.vm.isBatteryPopoverActive && !SharingStateManager.shared.preventNotchClose && !IslandInteractionLock.shared.isLocked && !IslandPinState.shared.pinned {
                         self.vm.close()
                     }
                 }
@@ -601,6 +768,7 @@ struct ContentView: View {
             }
             if !SharingStateManager.shared.preventNotchClose { 
                 gestureProgress = .zero
+                IslandPinState.shared.pinned = false
                 vm.close()
             }
 
@@ -651,10 +819,12 @@ struct GeneralDropTargetDelegate: DropDelegate {
     }
 }
 
-#Preview {
-    let vm = BoringViewModel()
-    vm.open()
-    return ContentView()
-        .environmentObject(vm)
-        .frame(width: vm.notchSize.width, height: vm.notchSize.height)
+
+
+/// Width of the compact island, used to place the detached "minimal" bubble.
+struct IslandPillWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
 }

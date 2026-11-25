@@ -1,3 +1,4 @@
+import IOKit
 import SwiftUI
 import Defaults
 
@@ -61,7 +62,7 @@ struct BatteryView: View {
 
             if iconStatus != "" && (isForNotification || Defaults[.showPowerStatusIcons]) {
                 ZStack {
-                    Image(iconStatus)
+                    Image(systemName: iconStatus == "bolt" ? "bolt.fill" : "powerplug.fill")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .foregroundColor(.white)
@@ -111,9 +112,14 @@ struct BatteryMenuView: View {
             }
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Max Capacity: \(Int(maxCapacity))%")
+                Text("Battery health: \(Int(maxCapacity))%")
                     .font(.subheadline)
                     .fontWeight(.regular)
+                if let limit = BatteryChargeLimit.todayPeak(), limit < 100 {
+                    Label("Charges to: \(limit)% (your charge limit)", systemImage: "battery.75percent")
+                        .font(.subheadline)
+                        .fontWeight(.regular)
+                }
                 if isInLowPowerMode {
                     Label("Low Power Mode", systemImage: "bolt.circle")
                         .font(.subheadline)
@@ -192,21 +198,18 @@ struct BoringBatteryView: View {
                 showPopupMenu.toggle()
             }
         }) {
-            HStack {
-                if Defaults[.showBatteryPercentage] {
-                    Text("\(Int32(levelBattery))%")
-                        .font(.callout)
-                        .foregroundStyle(.white)
-                }
-                BatteryView(
-                    levelBattery: levelBattery,
-                    isPluggedIn: isPluggedIn,
-                    isCharging: isCharging,
-                    isInLowPowerMode: isInLowPowerMode,
-                    batteryWidth: batteryWidth,
-                    isForNotification: isForNotification
-                )
-            }
+            // NotchIsland: Apple-style glyph with the percentage inside (iPhone status bar look).
+            AppleBatteryGlyph(
+                level: levelBattery,
+                isCharging: isCharging,
+                isPluggedIn: isPluggedIn,
+                isLowPower: isInLowPowerMode,
+                showPercentInside: Defaults[.showBatteryPercentage],
+                height: 12.5
+            )
+            .padding(.leading, 3)
+            .frame(height: 28)
+            .contentShape(Rectangle())
         }
         .buttonStyle(ScaleButtonStyle())
         .popover(
@@ -253,15 +256,18 @@ struct BoringBatteryView: View {
     }
 }
 
-#Preview {
-    BoringBatteryView(
-        batteryWidth: 30,
-        isCharging: false,
-        isInLowPowerMode: false,
-        isPluggedIn: true,
-        levelBattery: 80,
-        maxCapacity: 100,
-        timeToFullCharge: 10,
-        isForNotification: false
-    ).frame(width: 200, height: 200)
+
+
+/// NotchIsland: macOS doesn't expose the Charge Limit setting to apps, but the battery
+/// reports the highest charge it reached today — with a limit set, that's the limit.
+enum BatteryChargeLimit {
+    static func todayPeak() -> Int? {
+        let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
+        guard service != 0 else { return nil }
+        defer { IOObjectRelease(service) }
+        guard let data = IORegistryEntryCreateCFProperty(service, "BatteryData" as CFString, kCFAllocatorDefault, 0)?
+                .takeRetainedValue() as? [String: Any],
+              let peak = data["DailyMaxSoc"] as? Int, peak >= 50 else { return nil }
+        return peak
+    }
 }

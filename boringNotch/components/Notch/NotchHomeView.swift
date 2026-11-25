@@ -19,7 +19,7 @@ struct MusicPlayerView: View {
     var body: some View {
         HStack {
             AlbumArtView(vm: vm, albumArtNamespace: albumArtNamespace).padding(.all, 5)
-            MusicControlsView().drawingGroup().compositingGroup()
+            MusicControlsView().compositingGroup()
         }
     }
 }
@@ -27,7 +27,15 @@ struct MusicPlayerView: View {
 struct AlbumArtView: View {
     @ObservedObject var musicManager = MusicManager.shared
     @ObservedObject var vm: BoringViewModel
+    @ObservedObject var liveVideo = LiveVideoManager.shared
+    @Default(.liveVideoEnabled) var liveVideoEnabled
+    @Default(.liveVideoFrame) var liveVideoFrame
     let albumArtNamespace: Namespace.ID
+
+    /// NotchIsland: 16:9 artwork area while a live video is showing (optional).
+    private var artAspect: CGFloat {
+        (liveVideoEnabled && liveVideo.hasVideo && liveVideoFrame == .wide) ? max(1.2, min(2.4, liveVideo.aspect)) : 1
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -67,6 +75,8 @@ struct AlbumArtView: View {
             }
             .buttonStyle(PlainButtonStyle())
             .scaleEffect(musicManager.isPlaying ? 1 : 0.85)
+            .opacity(musicManager.skipPending ? 0.6 : 1)
+            .animation(.easeInOut(duration: 0.2), value: musicManager.skipPending)
             
             albumArtDarkOverlay
         }
@@ -82,9 +92,38 @@ struct AlbumArtView: View {
                 
 
     private var albumArtImage: some View {
-        Image(nsImage: musicManager.albumArt)
-            .resizable()
-            .aspectRatio(1, contentMode: .fit)
+        ZStack {
+            Image(nsImage: musicManager.albumArt)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+            // NotchIsland: streaming services (DRM) show their info, never a black mirror.
+            if let platform = liveVideo.ottPlatform, vm.notchState == .open {
+                OTTArtworkOverlay(platform: platform, showTile: musicManager.usingAppIconForArtwork)
+                    .transition(.opacity)
+            } else if liveVideoEnabled && vm.notchState == .open {
+            // NotchIsland: the playing video itself, live, in the artwork space.
+                LiveVideoView(fill: liveVideoFrame == .fill)
+                    .opacity(liveVideo.hasVideo ? 1 : 0)
+                    .allowsHitTesting(false)
+                if let hint = liveVideo.hint, !liveVideo.hasVideo {
+                    VStack {
+                        Spacer(minLength: 0)
+                        Text(hint)
+                            .font(.system(size: 8.5, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(4)
+                            .padding(4)
+                            .frame(maxWidth: .infinity)
+                            .background(.black.opacity(0.72))
+                    }
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
+                }
+            }
+        }
+            .aspectRatio(artAspect, contentMode: .fit)
+            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: artAspect)
             .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
             .clipped()
             .clipShape(
@@ -111,6 +150,7 @@ struct AlbumArtView: View {
 
 struct MusicControlsView: View {
     @ObservedObject var musicManager = MusicManager.shared
+    @ObservedObject private var liveVideo = LiveVideoManager.shared
         @EnvironmentObject var vm: BoringViewModel
         @ObservedObject var webcamManager = WebcamManager.shared
     @State private var sliderValue: Double = 0
@@ -140,11 +180,23 @@ struct MusicControlsView: View {
 
     private func songInfo(width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                MarqueeText(
+                    $musicManager.songTitle, font: .headline, nsFont: .headline, textColor: .white,
+                    frameWidth: musicManager.skipPending ? max(40, width - 22) : width)
+                if musicManager.skipPending {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.7)
+                        .frame(width: 16, height: 16)
+                        .transition(.opacity)
+                }
+            }
             MarqueeText(
-                $musicManager.songTitle, font: .headline, nsFont: .headline, textColor: .white,
-                frameWidth: width)
-            MarqueeText(
-                $musicManager.artistName,
+                // NotchIsland: streaming services → "Episode · Netflix · 52 min".
+                liveVideo.ottPlatform.map {
+                    .constant(OTTDetector.infoLine(platform: $0, artist: musicManager.artistName, duration: musicManager.songDuration))
+                } ?? $musicManager.artistName,
                 font: .headline,
                 nsFont: .headline,
                 textColor: Defaults[.playerColorTinting]
@@ -154,7 +206,7 @@ struct MusicControlsView: View {
             )
             .fontWeight(.medium)
             if Defaults[.enableLyrics] {
-                TimelineView(.animation(minimumInterval: 0.25)) { timeline in
+                TimelineView(.periodic(from: .now, by: musicManager.isPlaying ? 0.5 : 3600)) { timeline in
                     let currentElapsed: Double = {
                         guard musicManager.isPlaying else { return musicManager.elapsedTime }
                         let delta = timeline.date.timeIntervalSince(musicManager.timestampDate)
@@ -190,7 +242,7 @@ struct MusicControlsView: View {
     }
 
     private var musicSlider: some View {
-        TimelineView(.animation(minimumInterval: musicManager.playbackRate > 0 ? 0.1 : nil)) { timeline in
+        TimelineView(.periodic(from: .now, by: musicManager.isPlaying ? 0.5 : 3600)) { timeline in
             MusicSliderView(
                 sliderValue: $sliderValue,
                 duration: $musicManager.songDuration,
@@ -420,6 +472,7 @@ struct VolumeControlView: View {
 
 struct NotchHomeView: View {
     @EnvironmentObject var vm: BoringViewModel
+    @ObservedObject private var music = MusicManager.shared
     @ObservedObject var webcamManager = WebcamManager.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var coordinator = BoringViewCoordinator.shared
@@ -436,31 +489,35 @@ struct NotchHomeView: View {
     }
 
     private var shouldShowCamera: Bool {
-        Defaults[.showMirror] && webcamManager.cameraAvailable && vm.isCameraExpanded
+        Defaults[.showMirror] && vm.isCameraExpanded
     }
 
     private var mainContent: some View {
-        HStack(alignment: .top, spacing: (shouldShowCamera && Defaults[.showCalendar]) ? 10 : 15) {
-            MusicPlayerView(albumArtNamespace: albumArtNamespace)
-
-            if Defaults[.showCalendar] {
-                CalendarView()
-                    .frame(width: shouldShowCamera ? 170 : 215)
-                    .onHover { isHovering in
-                        vm.isHoveringCalendar = isHovering
-                    }
-                    .environmentObject(vm)
+        // NotchIsland: Home = media + (camera when it's on, otherwise your Bluetooth
+        // devices' batteries). The calendar has its own section in the header.
+        HStack(alignment: .top, spacing: 12) {
+            // NotchIsland: nothing playing → nothing shown (no stale artwork or title).
+            if music.hasActiveMedia {
+                MusicPlayerView(albumArtNamespace: albumArtNamespace)
+                    .transition(.opacity)
+            } else {
+                NothingPlayingView()
                     .transition(.opacity)
             }
 
             if shouldShowCamera {
                 CameraPreviewView(webcamManager: webcamManager)
-                    .scaledToFit()
+                    .frame(width: 128, height: 128) // fixed square: never cropped by the layout
                     .opacity(vm.notchState == .closed ? 0 : 1)
                     .blur(radius: vm.notchState == .closed ? 20 : 0)
-                    .animation(.interactiveSpring(response: 0.32, dampingFraction: 0.76, blendDuration: 0), value: shouldShowCamera)
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+            } else {
+                BluetoothBatteryCard()
+                    .frame(width: 214, height: 128)
+                    .transition(.opacity)
             }
         }
+        .animation(.interactiveSpring(response: 0.32, dampingFraction: 0.8, blendDuration: 0), value: shouldShowCamera)
         .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .top)), removal: .opacity))
         .blur(radius: vm.notchState == .closed ? 30 : 0)
     }
@@ -574,5 +631,49 @@ struct CustomSlider: View {
             )
             .animation(.spring(response: 0.35, dampingFraction: 0.7), value: dragging)
         }
+    }
+}
+
+/// Home when no media is playing: no artwork, no last title — just "Not Playing",
+/// plus Resume if a paused player is still around.
+struct NothingPlayingView: View {
+    @ObservedObject private var music = MusicManager.shared
+
+    var body: some View {
+        let canResume = !(music.bundleIdentifier ?? "").isEmpty && !music.songTitle.isEmpty
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white.opacity(0.05))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.08)))
+                Image(systemName: "music.note")
+                    .font(.system(size: 30, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.22))
+            }
+            .frame(width: 108, height: 108)
+            .padding(.leading, 5)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Not Playing").font(.system(size: 15, weight: .semibold)).foregroundStyle(.white.opacity(0.8))
+                Text("Music and videos you play appear here.")
+                    .font(.system(size: 11.5)).foregroundStyle(.gray).lineLimit(2)
+                if canResume {
+                    Button { music.play() } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "play.fill").font(.system(size: 10, weight: .bold))
+                            Text("Resume").font(.system(size: 11.5, weight: .semibold))
+                        }
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(Color.white.opacity(0.12)))
+                        .foregroundStyle(.white)
+                        .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, minHeight: 118, maxHeight: .infinity, alignment: .leading)
     }
 }
