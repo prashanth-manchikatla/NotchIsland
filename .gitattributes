@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.icns binary
+*.tiff binary
+*.m4a binary
+
+# Keep GitHub's language bar about NotchIsland's own code
+Vendor/** linguist-vendored
+mediaremote-adapter/** linguist-vendored
+docs/** linguist-documentation

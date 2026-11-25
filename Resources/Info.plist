@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>NotchIsland</string>
+	<key>CFBundleExecutable</key>
+	<string>NotchIsland</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>__BUNDLE_ID__</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>NotchIsland</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>__VERSION__</string>
+	<key>CFBundleVersion</key>
+	<string>__BUILD__</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>NotchIsland controls your music apps and asks macOS for permission changes such as keeping your Mac awake with the lid closed.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>NotchIsland shows an island with battery levels when your AirPods or other Bluetooth devices connect.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>NotchIsland shows your upcoming events in the island.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>NotchIsland shows your upcoming events in the island.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>NotchIsland uses the camera for the mirror and for the photos and videos you take with it.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>NotchIsland — personal build based on boring.notch (GPL-3.0)</string>
+	<key>NSLocationUsageDescription</key>
+	<string>NotchIsland shows the weather for where you are in the Calendar section.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>NotchIsland shows the weather for where you are in the Calendar section.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>NotchIsland uses the microphone only while you record — a screen recording with sound, or a camera video.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>NotchIsland shows your reminders next to your calendar.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>NotchIsland shows your reminders next to your calendar.</string>
+</dict>
+</plist>
