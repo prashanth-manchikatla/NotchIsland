@@ -32,6 +32,7 @@ public enum NotchViews {
     case notifications
     case timers
     case calendar
+    case connectivity
     case shortcuts
     case monitor
     case ai

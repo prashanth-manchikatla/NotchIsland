@@ -165,13 +165,15 @@ struct HeaderCircleButton<Label: View>: View {
     let help: String
     let tap: () -> Void
     var menu: (() -> NSMenu)? = nil
+    /// Shows a soft capsule while the button's island section is open.
+    var selected = false
     @ViewBuilder var label: () -> Label
     @State private var hovering = false
     @State private var suppressTap = false
 
     var body: some View {
         Capsule()
-            .fill(Color.white.opacity(hovering ? 0.14 : 0.0001))
+            .fill(Color.white.opacity((hovering ? 0.14 : 0.0001) + (selected ? 0.12 : 0)))
             .frame(width: 26, height: 28)
             .overlay { label() }
             .overlay(alignment: .bottom) {

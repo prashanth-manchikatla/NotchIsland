@@ -437,6 +437,8 @@ struct ContentView: View {
                             TimerTabView()
                         case .calendar:
                             IslandCalendarSection()
+                        case .connectivity:
+                            IslandConnectivitySection()
                         case .shortcuts:
                             ShortcutsTabView()
                         case .monitor:

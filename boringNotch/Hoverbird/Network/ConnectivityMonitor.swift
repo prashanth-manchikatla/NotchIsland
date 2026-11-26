@@ -7,7 +7,7 @@
 //  USB), Ethernet, VPN, and connected Bluetooth devices.
 //
 //  Event-driven: NWPathMonitor + CoreWLAN change events. Signal strength is
-//  re-read only while the details popover is open.
+//  re-read only while the island's Connectivity section is showing.
 //
 
 import AppKit
@@ -132,7 +132,8 @@ final class ConnectivityMonitor: NSObject, ObservableObject, CWEventDelegate {
         refreshBluetooth()
     }
 
-    func popoverOpened() {
+    /// The Connectivity section is showing in the island: keep the signal strength current.
+    func detailsShown() {
         refreshNetwork()
         refreshBluetooth()
         detailTimer?.invalidate()
@@ -144,7 +145,7 @@ final class ConnectivityMonitor: NSObject, ObservableObject, CWEventDelegate {
         detailTimer = timer
     }
 
-    func popoverClosed() {
+    func detailsHidden() {
         detailTimer?.invalidate()
         detailTimer = nil
     }

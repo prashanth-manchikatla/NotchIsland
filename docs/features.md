@@ -169,7 +169,9 @@ A live view of how much AI you use, read from the logs your tools already keep o
 - **Batteries:** this Mac and every connected accessory, Apple-widget style — AirPods left / right / case,
   with charging state and low-battery warnings. Optional alerts when this Mac is charged to your level or
   running low.
-- **Connectivity:** Wi-Fi, Personal Hotspot, Ethernet and Bluetooth at a glance.
+- **Connectivity:** the header's Wi-Fi icon opens a Connectivity section inside the island, like Calendar:
+  network name, signal, band, IP address and speed, Personal Hotspot, Ethernet and VPN, plus connected
+  Bluetooth devices with their batteries.
 - **Downloads:** a finished download shows in the island and lands on the Shelf.
 - **Drives:** a pill when a drive connects; eject it from the menu bar.
 - **Shelf:** drop files on the notch to keep them handy; AirDrop and share from there.

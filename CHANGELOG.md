@@ -24,6 +24,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - `Scripts/setup-signing.sh` works with Homebrew's OpenSSL 4 (it now uses macOS's own `openssl`).
 - Pressing play after a video is already full screen now quiets the island too.
+- The connectivity button now shows Wi-Fi, hotspot, Ethernet, VPN and Bluetooth details inside the
+  island instead of in a separate popover.
 
 ## [1.0.0-beta.1] — 2026-11-25
 
