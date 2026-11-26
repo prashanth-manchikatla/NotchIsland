@@ -17,11 +17,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DIR="${NI_SIGNING_DIR:-$ROOT/.signing}"
-KEYCHAIN="${NI_KEYCHAIN:-$HOME/Library/Keychains/hoverbird-codesign.keychain-db}"
+DIR="${HB_SIGNING_DIR:-$ROOT/.signing}"
+KEYCHAIN="${HB_KEYCHAIN:-$HOME/Library/Keychains/hoverbird-codesign.keychain-db}"
 NAME="Hoverbird Local Signing"
-# For testing in isolation: NI_SKIP_SYSTEM=1 skips the keychain search list and the trust setting.
-SKIP_SYSTEM="${NI_SKIP_SYSTEM:-0}"
+# For testing in isolation: HB_SKIP_SYSTEM=1 skips the keychain search list and the trust setting.
+SKIP_SYSTEM="${HB_SKIP_SYSTEM:-0}"
 
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 
