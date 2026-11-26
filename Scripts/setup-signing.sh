@@ -42,7 +42,11 @@ chmod 700 "$DIR"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-PASS="$(openssl rand -hex 24)"
+# macOS's own openssl (LibreSSL) writes .p12 files the Keychain can import. A Homebrew OpenSSL
+# 3 or later needs -legacy for that (OpenSSL 4 is on PATH first on many Macs).
+OPENSSL=/usr/bin/openssl
+[[ -x "$OPENSSL" ]] || OPENSSL=openssl
+PASS="$("$OPENSSL" rand -hex 24)"
 printf '%s' "$PASS" > "$DIR/keychain.pass"
 chmod 600 "$DIR/keychain.pass"
 
@@ -62,12 +66,11 @@ subjectKeyIdentifier = hash
 EOF
 
 log "Creating a self-signed code-signing certificate"
-openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -config "$DIR/cert.cnf" \
+"$OPENSSL" req -x509 -newkey rsa:2048 -nodes -days 3650 -config "$DIR/cert.cnf" \
   -keyout "$WORK/key.pem" -out "$DIR/cert.pem" 2>/dev/null
 # (bash 3.2 on macOS: empty arrays are expanded with the ${a[@]+…} idiom under set -u.)
-# -legacy is needed by OpenSSL 3 so the Keychain can read the file; LibreSSL (macOS default) ignores the need.
-if openssl version | grep -q '^OpenSSL 3'; then LEGACY=(-legacy); else LEGACY=(); fi
-openssl pkcs12 -export ${LEGACY[@]+"${LEGACY[@]}"} -inkey "$WORK/key.pem" -in "$DIR/cert.pem" \
+if "$OPENSSL" version | grep -qE '^OpenSSL ([3-9]|[1-9][0-9])'; then LEGACY=(-legacy); else LEGACY=(); fi
+"$OPENSSL" pkcs12 -export ${LEGACY[@]+"${LEGACY[@]}"} -inkey "$WORK/key.pem" -in "$DIR/cert.pem" \
   -name "$NAME" -out "$WORK/identity.p12" -passout pass:"$PASS"
 
 log "Creating the keychain $KEYCHAIN"
