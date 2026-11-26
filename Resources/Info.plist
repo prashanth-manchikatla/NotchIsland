@@ -34,7 +34,7 @@
 		<true/>
 	</dict>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Hoverbird controls your music apps and asks macOS for permission changes such as keeping your Mac awake with the lid closed.</string>
+	<string>Hoverbird controls your music apps, resizes full-screen video in Safari and Chrome-family browsers for Cinema mode (Fill and Stretch), and asks macOS for permission changes such as keeping your Mac awake with the lid closed.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Hoverbird shows an island with battery levels when your AirPods or other Bluetooth devices connect.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>

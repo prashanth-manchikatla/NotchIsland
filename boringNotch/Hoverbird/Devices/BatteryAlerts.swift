@@ -55,7 +55,8 @@ final class BatteryAlerts {
             if Defaults[.batteryLowAlert], percent <= low, !lowShown {
                 lowShown = true
                 IslandActivityHub.shared.showPill(.info(symbol: "battery.25percent", text: "Battery \(percent)% — plug in soon",
-                                                        tint: percent <= 10 ? .red : .orange), duration: 5)
+                                                        tint: percent <= 10 ? .red : .orange), duration: 5,
+                                                  urgent: percent <= 10) // still shown over a full-screen movie
             }
         }
     }

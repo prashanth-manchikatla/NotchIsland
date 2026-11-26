@@ -48,6 +48,24 @@ focus → iPhone orders → iPhone Live Activities → next meeting → stopwatc
 - **Not Playing:** when nothing plays, Home shows a clean card (with Resume when a paused player remains).
 - YouTube controls work in the background and from other desktops.
 
+## Cinema mode
+
+For Netflix, Prime Video and other streaming services (Settings › Cinema).
+
+- **Quiet full screen:** while a video plays full screen, the island stays a plain black notch and
+  notification banners wait. Leaving full screen shows "N notifications while you watched". A ringing
+  timer, a recording or a nearly empty battery still show.
+- **Player controls:** hover the notch for ±10 s, play/pause, Skip intro (or recap, or the next episode),
+  mute and full screen, plus time left and when it ends. The controls use the player's own shortcuts and
+  buttons, so they work while the app is in the background.
+- **Theater, the whole screen (1.54:1):** macOS keeps every full-screen app below the notch, in a 16:10
+  area. "Full 1.54:1" moves what's playing into Hoverbird's own window over the whole display, beside
+  the notch too, the way VLC's full screen works. Netflix and Prime Video play there with FairPlay. You
+  sign in once (Settings › Cinema can sign you out). Esc or ⌘W leaves.
+- **Fit / Fill / Stretch + Zoom:** like VLC. In the Theater a 16:9 show with Fill is zoomed ×1.16 (about
+  7 % trimmed from each side); Stretch makes it about 16 % taller instead. Fill and Stretch also work in a
+  Safari or Chrome-family tab in normal full screen after you turn on "Allow JavaScript from Apple Events".
+
 ## AI Usage
 
 A live view of how much AI you use, read from the logs your tools already keep on your Mac.

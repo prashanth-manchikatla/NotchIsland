@@ -18,6 +18,8 @@ struct IslandTuning: Codable {
     var liveVideoHeatThreshold: Int? = nil
     /// Write live-video debug info to livevideo-debug.txt.
     var liveVideoDebug: Bool? = nil
+    /// Write Cinema mode debug info (picture-mode script results) to cinema-debug.txt.
+    var cinemaDebug: Bool? = nil
 
     private static var cached = IslandTuning()
     private static var cachedDate: Date?

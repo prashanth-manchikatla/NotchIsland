@@ -91,10 +91,11 @@ class BoringViewModel: NSObject, ObservableObject {
             .removeDuplicates()
 
         // Combine all three: screen UUID, fullscreen status, and enabled setting
-        Publishers.CombineLatest3(screenPublisher, fullscreenStatusPublisher, enabledPublisher)
-            .map { screenUUID, fullscreenStatus, enabled in
+        // (Hoverbird: plus the Cinema Theater — the notch stays quiet over its video too)
+        Publishers.CombineLatest4(screenPublisher, fullscreenStatusPublisher, enabledPublisher, CinemaTheater.shared.$isOpen)
+            .map { screenUUID, fullscreenStatus, enabled, theaterOpen in
                 let isFullscreen = fullscreenStatus[screenUUID] ?? false
-                return enabled && isFullscreen
+                return (enabled && isFullscreen) || theaterOpen
             }
             .removeDuplicates()
             .receive(on: RunLoop.main)

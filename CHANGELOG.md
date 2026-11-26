@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **Cinema mode** for Netflix, Prime Video and other streaming services: quiet island and held
+  notifications during full-screen video ("while you watched" summary), ±10 s / Skip intro / mute /
+  full-screen controls with time left, the full-screen **Theater** that uses the whole 1.54:1 screen
+  beside the notch, and VLC-style Fit / Fill / Stretch with zoom.
+
 ### Changed
 
 - **New app icon — Midnight Glass:** a glass hummingbird hovering at the island, glowing on deep midnight blue,
@@ -16,6 +23,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Fixed
 
 - `Scripts/setup-signing.sh` works with Homebrew's OpenSSL 4 (it now uses macOS's own `openssl`).
+- Pressing play after a video is already full screen now quiets the island too.
 
 ## [1.0.0-beta.1] — 2026-11-25
 

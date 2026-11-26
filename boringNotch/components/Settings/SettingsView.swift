@@ -32,6 +32,9 @@ struct SettingsView: View {
                 NavigationLink(value: "Media") {
                     Label("Media", systemImage: "play.laptopcomputer")
                 }
+                NavigationLink(value: "Cinema") {
+                    Label("Cinema", systemImage: "film")
+                }
                 NavigationLink(value: "Calendar") {
                     Label("Calendar", systemImage: "calendar")
                 }
@@ -125,6 +128,8 @@ struct SettingsView: View {
                     Appearance()
                 case "Media":
                     Media()
+                case "Cinema":
+                    CinemaSettingsView()
                 case "Calendar":
                     CalendarSettings()
                 case "HUD":

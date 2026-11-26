@@ -153,6 +153,7 @@ final class LiveVideoManager: NSObject, ObservableObject {
             && music.isPlaying
             && !bundleID.isEmpty
             && !Self.audioOnlyApps.contains(bundleID)
+            && bundleID != Bundle.main.bundleIdentifier // our own Theater: never capture ourselves
             && platform == nil
             && (retryAllowed || sessionKey == key)
             && ScreenCapturePermission.isGranted
@@ -178,6 +179,10 @@ final class LiveVideoManager: NSObject, ObservableObject {
 
     private func streamingPlatform(bundleID: String, key: String) -> OTTPlatform? {
         guard !bundleID.isEmpty, !Self.audioOnlyApps.contains(bundleID) else { return nil }
+        // Hoverbird Cinema: video playing in our own full-screen Theater.
+        if bundleID == Bundle.main.bundleIdentifier {
+            return CinemaTheater.shared.isOpen ? CinemaTheater.shared.platform : nil
+        }
         if protectedKeys.contains(key) {
             let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first?.localizedName
             return OTTPlatform(name: app.map { "\($0) · protected" } ?? "Protected video", tint: .gray, detectedByBlackFrames: true)

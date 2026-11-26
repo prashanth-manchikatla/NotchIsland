@@ -146,6 +146,18 @@ enum OTTDetector {
         browserPrefixes.contains { bundleID.hasPrefix($0) }
     }
 
+    /// The service's web addresses ("netflix.com"), used to find its browser tab.
+    static func domains(forPlatformNamed name: String?) -> [String] {
+        guard let name else { return [] }
+        return rules.first { $0.name == name }?.domains ?? []
+    }
+
+    /// The service's home page, for "Open in Safari" when the app's own address is unknown.
+    static func homeURL(forPlatformNamed name: String?) -> URL? {
+        guard let domain = domains(forPlatformNamed: name).first(where: { !$0.contains("/") }) else { return nil }
+        return URL(string: "https://www.\(domain)")
+    }
+
     /// The streaming platform behind what's playing, if any.
     @MainActor
     static func detect(bundleID: String, title: String, artist: String, album: String) -> OTTPlatform? {

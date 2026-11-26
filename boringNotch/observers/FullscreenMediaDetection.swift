@@ -15,11 +15,25 @@ final class FullscreenMediaDetector: ObservableObject {
     static let shared = FullscreenMediaDetector()
     
     @Published var fullscreenStatus: [String: Bool] = [:]
+    /// Hoverbird: apps in the full-screen Spaces showing right now (for Cinema mode).
+    @Published private(set) var fullScreenApps: Set<String> = []
     
     private var monitorTask: Task<Void, Never>?
+    private var lastSpaces: [MacroVisionKit.FullScreenMonitor.SpaceInfo] = []
+    private var musicSource: AnyCancellable?
     
     private init() {
         startMonitoring()
+        // Hoverbird: pressing play after going full screen changes the media app — re-check
+        // then too, not only when Spaces change.
+        musicSource = MusicManager.shared.$bundleIdentifier
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.updateStatus(with: self.lastSpaces)
+            }
     }
     
     deinit {
@@ -36,6 +50,9 @@ final class FullscreenMediaDetector: ObservableObject {
     }
     
     private func updateStatus(with spaces: [MacroVisionKit.FullScreenMonitor.SpaceInfo]) {
+        lastSpaces = spaces
+        let apps = Set(spaces.flatMap(\.runningApps))
+        if apps != fullScreenApps { fullScreenApps = apps }
         var newStatus: [String: Bool] = [:]
         
         for space in spaces {
@@ -50,7 +67,7 @@ final class FullscreenMediaDetector: ObservableObject {
             }
         }
         
-        self.fullscreenStatus = newStatus
+        if newStatus != fullscreenStatus { self.fullscreenStatus = newStatus }
     }
 }
 

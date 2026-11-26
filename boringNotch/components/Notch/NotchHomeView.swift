@@ -158,6 +158,7 @@ struct MusicControlsView: View {
     @State private var lastDragged: Date = .distantPast
     @Default(.musicControlSlots) private var slotConfig
     @Default(.musicControlSlotLimit) private var slotLimit
+    @Default(.cinemaModeEnabled) private var cinemaEnabled
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -262,7 +263,31 @@ struct MusicControlsView: View {
         }
     }
 
+    @ViewBuilder
     private var slotToolbar: some View {
+        if liveVideo.ottPlatform != nil, cinemaEnabled {
+            cinemaToolbar
+        } else {
+            musicToolbar
+        }
+    }
+
+    /// Hoverbird Cinema: streaming services seek in 10 s steps with their own shortcuts
+    /// (they ignore Now Playing seek and next/previous).
+    private var cinemaToolbar: some View {
+        HStack(spacing: 6) {
+            HoverButton(icon: "gobackward.10", scale: .medium) { CinemaControls.seek(forward: false) }
+                .help("Back 10 seconds")
+            HoverButton(icon: musicManager.isPlaying ? "pause.fill" : "play.fill", scale: .large) {
+                MusicManager.shared.togglePlay()
+            }
+            HoverButton(icon: "goforward.10", scale: .medium) { CinemaControls.seek(forward: true) }
+                .help("Forward 10 seconds")
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private var musicToolbar: some View {
         let slots = activeSlots
         return HStack(spacing: 6) {
             ForEach(Array(slots.enumerated()), id: \.offset) { index, slot in
@@ -473,6 +498,8 @@ struct VolumeControlView: View {
 struct NotchHomeView: View {
     @EnvironmentObject var vm: BoringViewModel
     @ObservedObject private var music = MusicManager.shared
+    @ObservedObject private var liveVideo = LiveVideoManager.shared
+    @Default(.cinemaModeEnabled) private var cinemaEnabled
     @ObservedObject var webcamManager = WebcamManager.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
     @ObservedObject var coordinator = BoringViewCoordinator.shared
@@ -511,6 +538,11 @@ struct NotchHomeView: View {
                     .opacity(vm.notchState == .closed ? 0 : 1)
                     .blur(radius: vm.notchState == .closed ? 20 : 0)
                     .transition(.scale(scale: 0.7).combined(with: .opacity))
+            } else if cinemaEnabled, music.hasActiveMedia, let platform = liveVideo.ottPlatform {
+                // Hoverbird Cinema: picture mode, skip intro, mute, full screen, time left.
+                CinemaCard(platform: platform)
+                    .frame(width: 214, height: 128)
+                    .transition(.opacity)
             } else {
                 BluetoothBatteryCard()
                     .frame(width: 214, height: 128)

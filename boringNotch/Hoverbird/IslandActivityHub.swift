@@ -29,6 +29,8 @@ struct IslandPill: Identifiable, Equatable {
     let id = UUID()
     let kind: Kind
     let duration: TimeInterval
+    /// Shown even over a full-screen video (Cinema mode), e.g. a nearly empty battery.
+    var urgent = false
 }
 
 struct IslandBanner: Identifiable, Equatable {
@@ -139,8 +141,8 @@ final class IslandActivityHub: ObservableObject {
 
     // MARK: Transients
 
-    func showPill(_ kind: IslandPill.Kind, duration: TimeInterval = 2.5) {
-        let pill = IslandPill(kind: kind, duration: duration)
+    func showPill(_ kind: IslandPill.Kind, duration: TimeInterval = 2.5, urgent: Bool = false) {
+        let pill = IslandPill(kind: kind, duration: duration, urgent: urgent)
         withAnimation(Defaults[.islandMotionStyle].interactive) { self.pill = pill }
         recompute()
         pillTask?.cancel()
@@ -158,7 +160,12 @@ final class IslandActivityHub: ObservableObject {
         recompute()
     }
 
-    func showBanner(_ banner: IslandBanner) {
+    /// `force` skips Cinema mode's hold (used for its own "while you watched" summary).
+    func showBanner(_ banner: IslandBanner, force: Bool = false) {
+        if !force, CinemaMode.shared.shouldHold(banner) {
+            CinemaMode.shared.hold(banner)
+            return
+        }
         withAnimation(Defaults[.islandMotionStyle].open) { self.banner = banner }
         recompute()
         bannerTask?.cancel()

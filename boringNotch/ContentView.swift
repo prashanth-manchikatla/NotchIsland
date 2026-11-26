@@ -361,7 +361,7 @@ struct ContentView: View {
                       } else if coordinator.sneakPeek.show && Defaults[.inlineHUD] && (coordinator.sneakPeek.type != .music) && (coordinator.sneakPeek.type != .battery) && vm.notchState == .closed {
                           InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering, gestureProgress: $gestureProgress)
                               .transition(.opacity)
-                      } else if vm.notchState == .closed, let activity = hub.primary, !vm.hideOnClosed || activity == .recording {
+                      } else if vm.notchState == .closed, let activity = hub.primary, !vm.hideOnClosed || activity.showsOverFullScreen {
                           IslandCompactActivityView(activity: activity)
                               .id(activityIdentity(activity))
                       } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music) && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle) && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed {
@@ -609,7 +609,11 @@ struct ContentView: View {
     }
 
     private func doOpen(choosingTab: Bool = true) {
-        if choosingTab, vm.notchState == .closed, let tab = tab(for: hub.primary) {
+        if choosingTab, vm.notchState == .closed, CinemaMode.shared.isActive, Defaults[.cinemaOpenToPlayer],
+           !vm.anyDropZoneTargeting, !(hub.primary?.showsOverFullScreen ?? false) {
+            // Hoverbird Cinema: hovering the notch during a full-screen video shows the player.
+            coordinator.currentView = .home
+        } else if choosingTab, vm.notchState == .closed, let tab = tab(for: hub.primary) {
             coordinator.currentView = tab
             if case .banner(let banner)? = hub.primary { NotificationMirror.shared.focus(banner.notificationID) }
         }
