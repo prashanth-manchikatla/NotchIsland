@@ -11,6 +11,14 @@ tuned or switched off.
 
 ---
 
+## Look
+
+- **Midnight Glass:** Hoverbird's icon is a glass hummingbird hovering at the island, glowing on deep midnight
+  blue, drawn on the macOS icon shape. The menu bar shows the same hummingbird, tinted for light and dark menu
+  bars. Buttons and switches follow the accent colour in System Settings, like Apple's own apps.
+- The icon's source is `Resources/Icon/AppIcon.svg`; `Scripts/make_icons.sh` builds `Resources/AppIcon.icns`.
+
+## The island
 ## The island
 
 - **Black glass** with an adjustable tint, optional macOS 26 **Liquid Glass**, a subtle glass rim and

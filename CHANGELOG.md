@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- **New app icon — Midnight Glass:** a glass hummingbird hovering at the island, glowing on deep midnight blue,
+  on the macOS icon shape. The menu bar glyph is the same hummingbird. The icon's source is now an SVG
+  (`Resources/Icon/AppIcon.svg`) built by `Scripts/make_icons.sh`.
+- New README banner and social preview in the Midnight Glass style.
+
+### Fixed
+
+- `Scripts/setup-signing.sh` works with Homebrew's OpenSSL 4 (it now uses macOS's own `openssl`).
+
 ## [1.0.0-beta.1] — 2026-11-25
 
 The first public beta. Hoverbird grows out of [boring.notch](https://github.com/TheBoredTeam/boring.notch)

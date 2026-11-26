@@ -58,7 +58,7 @@ frameworks — is `Scripts/build.sh`.
 | `Vendor/` | Vendored Swift dependencies (see `Vendor/README.md`) |
 | `mediaremote-adapter/` | The MediaRemote adapter that sends media commands (required since macOS 15.4) |
 | `Resources/` | `Info.plist`, app icon, images |
-| `Scripts/` | `build.sh`, `setup-signing.sh`, icon and preview helpers |
+| `Scripts/` | `build.sh`, `setup-signing.sh`, `make_icons.sh` (app icon from `Resources/Icon/AppIcon.svg`) |
 | `docs/` | Documentation and README assets |
 
 See [architecture.md](architecture.md) for how the pieces fit together.
