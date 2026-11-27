@@ -38,15 +38,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Pressing play after a video is already full screen now quiets the island too.
 - The connectivity button now shows Wi-Fi, hotspot, Ethernet, VPN and Bluetooth details inside the
   island instead of in a separate popover.
-
-## [1.0.0-beta.1] — 2026-11-25
-
-The first public beta. Hoverbird grows out of [boring.notch](https://github.com/TheBoredTeam/boring.notch)
-into an iPhone-style Dynamic Island for the MacBook notch.
-
-### Added
-
-- **The island:** black glass with adjustable tint, optional macOS 26 Liquid Glass, glass rim and
 - Cinema: choosing Fit / Fill / Stretch while watching in the Netflix web app did nothing — the web app
   can't be resized by other apps, so the choice now moves the video into the Theater, where it applies.
 - Cinema: after an update, the Theater asked for the Mac's login password again and again (WebKit kept an
@@ -69,6 +60,15 @@ into an iPhone-style Dynamic Island for the MacBook notch.
 - Cinema: moving Netflix into the Theater started paused, at Netflix's own bookmark; it now continues at
   the same second, playing. The Theater no longer opens in Fit (its picture is the same as normal full
   screen), and picture modes no longer resize the trailer in a page's header.
+
+## [1.0.0-beta.1] — 2026-11-25
+
+The first public beta. Hoverbird grows out of [boring.notch](https://github.com/TheBoredTeam/boring.notch)
+into an iPhone-style Dynamic Island for the MacBook notch.
+
+### Added
+
+- **The island:** black glass with adjustable tint, optional macOS 26 Liquid Glass, glass rim and
   iPhone-style springs; proximity growth, instant open at the top edge, two-finger swipes and pinning.
 - **Live Activities:** one primary activity around the camera and a detached bubble, with a single
   priority order for recordings, timers, banners, meetings, orders, media and more.

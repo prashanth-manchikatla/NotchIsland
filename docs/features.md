@@ -65,6 +65,10 @@ For Netflix, Prime Video and other streaming services (Settings › Cinema).
 - **Player controls:** hover the notch for ±10 s, play/pause, Skip intro (or recap, or the next episode),
   mute and full screen, plus time left and when it ends. The controls use the player's own shortcuts and
   buttons, so they work while the app is in the background.
+- **What's playing:** the movie or episode's real title, its key art and the time. Netflix tells macOS only
+  "Netflix", its icon and no time, so Hoverbird reads the player itself: its controls through Accessibility
+  in the Netflix web app or a browser (whenever they're on screen — the time keeps counting from there),
+  the page directly in the Theater, and the title's public page on netflix.com for the picture.
 - **Theater, the whole screen (1.54:1):** macOS keeps every full-screen app below the notch, in a 16:10
   area. "Full 1.54:1" moves what's playing into Hoverbird's own window over the whole display, beside
   the notch too, the way VLC's full screen works: the same title, at the same second, still playing.
@@ -80,10 +84,6 @@ For Netflix, Prime Video and other streaming services (Settings › Cinema).
   there moves the video into the Theater — from the Prime Video app straight to the same title, at the same
   moment. Players that keep their video in a 16:9 frame (Prime Video) are handled too. The modes also work in
   a Safari or Chrome-family tab in normal full screen after you turn on "Allow JavaScript from Apple Events".
-- **What's playing:** the movie or episode's real title, its key art and the time. Netflix tells macOS only
-  "Netflix", its icon and no time, so Hoverbird reads the player itself: its controls through Accessibility
-  in the Netflix web app or a browser (whenever they're on screen — the time keeps counting from there),
-  the page directly in the Theater, and the title's public page on netflix.com for the picture.
 
 ## AI Usage
 
