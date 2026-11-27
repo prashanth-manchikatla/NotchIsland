@@ -33,15 +33,19 @@ enum IslandBlurStrength: String, CaseIterable, Identifiable, Defaults.Serializab
 }
 
 enum IslandMotionStyle: String, CaseIterable, Identifiable, Defaults.Serializable {
+    /// The island opens like a bird spreading its wings, then the bird becomes the island; closing folds it back.
+    case wings = "Wings"
     case iPhone = "iPhone (bouncy)"
     case smooth = "Smooth"
     case snappy = "Snappy"
     var id: String { rawValue }
 
+    var isWings: Bool { self == .wings }
+
     var open: Animation {
         switch self {
         case .iPhone: return .spring(response: 0.46, dampingFraction: 0.74, blendDuration: 0)
-        case .smooth: return .spring(response: 0.42, dampingFraction: 0.86, blendDuration: 0)
+        case .smooth, .wings: return .spring(response: 0.42, dampingFraction: 0.86, blendDuration: 0)
         case .snappy: return .spring(response: 0.30, dampingFraction: 0.82, blendDuration: 0)
         }
     }
@@ -49,7 +53,7 @@ enum IslandMotionStyle: String, CaseIterable, Identifiable, Defaults.Serializabl
     var close: Animation {
         switch self {
         case .iPhone: return .spring(response: 0.40, dampingFraction: 0.86, blendDuration: 0)
-        case .smooth: return .spring(response: 0.42, dampingFraction: 1.0, blendDuration: 0)
+        case .smooth, .wings: return .spring(response: 0.42, dampingFraction: 1.0, blendDuration: 0)
         case .snappy: return .spring(response: 0.28, dampingFraction: 0.95, blendDuration: 0)
         }
     }
@@ -57,11 +61,18 @@ enum IslandMotionStyle: String, CaseIterable, Identifiable, Defaults.Serializabl
     /// Used for hover "lift", proximity growth and compact live-activity changes.
     var interactive: Animation {
         switch self {
-        case .iPhone: return .interactiveSpring(response: 0.36, dampingFraction: 0.72, blendDuration: 0)
+        case .iPhone, .wings: return .interactiveSpring(response: 0.36, dampingFraction: 0.72, blendDuration: 0)
         case .smooth: return .interactiveSpring(response: 0.38, dampingFraction: 0.85, blendDuration: 0)
         case .snappy: return .interactiveSpring(response: 0.26, dampingFraction: 0.8, blendDuration: 0)
         }
     }
+
+    /// The whole flight — wings open, then the glass fills out from the bird — on one spring.
+    static let wingsOpen: Animation = .spring(duration: 1.0, bounce: 0.06)
+    /// Folding back: quicker and without a bounce, so the island never feels slow to get out of the way.
+    static let wingsClose: Animation = .spring(duration: 0.6, bounce: 0)
+    /// About when the island has filled in, for the few loose feathers that drift off.
+    static let wingsSettleDelay: Duration = .milliseconds(650)
 }
 
 // MARK: - Capture
@@ -82,7 +93,7 @@ extension Defaults.Keys {
     static let islandCompactOpacity = Key<Double>("islandCompactOpacity", default: 1.0)
     static let islandBlurStrength = Key<IslandBlurStrength>("islandBlurStrength", default: .strong)
     static let islandGlassRim = Key<Bool>("islandGlassRim", default: true)
-    static let islandMotionStyle = Key<IslandMotionStyle>("islandMotionStyle", default: .iPhone)
+    static let islandMotionStyle = Key<IslandMotionStyle>("islandMotionStyle", default: .wings)
 
     // MARK: Island behaviour
     /// The pill grows a little as the pointer approaches the notch.

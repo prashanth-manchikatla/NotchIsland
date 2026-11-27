@@ -120,7 +120,7 @@ struct CameraPreviewView: View {
             if webcamManager.isSwitchingCamera {
                 shape.fill(Color.black.opacity(0.6)).allowsHitTesting(false)
                 VStack(spacing: 5) {
-                    ProgressView().controlSize(.small)
+                    BirdActivityIndicator(size: 18)
                     Text(webcamManager.source == .mac ? "iPhone…" : "Mac camera…")
                         .font(.system(size: 9.5, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.85))

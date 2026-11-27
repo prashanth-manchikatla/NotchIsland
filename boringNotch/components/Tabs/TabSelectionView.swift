@@ -68,8 +68,7 @@ struct TabSelectionView: View {
                 .background {
                     // Selected tab: a sliding capsule. (No clipping here, so hover tags can show.)
                     if selected {
-                        Capsule()
-                            .fill(Color(nsColor: .secondarySystemFill))
+                        PlumageCapsule()
                             .matchedGeometryEffect(id: "capsule", in: animation)
                     }
                 }

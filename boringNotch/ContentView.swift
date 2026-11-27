@@ -40,6 +40,20 @@ struct ContentView: View {
 
     @State private var haptics: Bool = false
 
+    // Hoverbird wings: the island opens as a bird spreading its wings, and the bird becomes the island.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 0 = the closed pill, 1 = the open island (animated with springs).
+    @State private var wingProgress: CGFloat = 0
+    /// The wing glass is on screen: opening, open or folding.
+    @State private var wingsShown = false
+    @State private var wingPill: CGSize = .zero
+    @State private var lastClosedPill: CGSize = .zero
+    @State private var wingGeneration = 0
+    @State private var featherDrift = 0
+
+    private var wingsEnabled: Bool { motionStyle.isWings && !reduceMotion }
+    private var wingsActive: Bool { wingsEnabled && wingsShown }
+
     @Namespace var albumArtNamespace
 
     @Default(.useMusicVisualizer) var useMusicVisualizer
@@ -129,6 +143,10 @@ struct ContentView: View {
         }()
         
         ZStack(alignment: .top) {
+            if wingsActive {
+                IslandWingsLayer(progress: wingProgress, pill: wingPill, driftTrigger: featherDrift)
+                    .transition(.identity)
+            }
             if vm.notchState == .closed, !vm.hideOnClosed, let secondary = hub.secondary, pillWidth > 0 {
                 let d = max(18, vm.effectiveClosedNotchHeight - 6)
                 IslandMinimalBubble(activity: secondary, diameter: d)
@@ -151,11 +169,14 @@ struct ContentView: View {
                         : cornerRadiusInsets.closed.bottom
                     )
                     .padding([.horizontal, .bottom], vm.notchState == .open ? 12 : 0)
-                    .background { IslandBackground(isOpen: vm.notchState == .open) }
+                    // With wings, the glass, rim and shadow come from IslandWingsLayer while it's shown.
+                    .background { if !wingsActive { IslandBackground(isOpen: vm.notchState == .open) } }
                     .clipShape(currentNotchShape)
-                    .overlay { IslandRim(shape: currentNotchShape, visible: vm.notchState == .open) }
+                    .overlay { if !wingsActive { IslandRim(shape: currentNotchShape, visible: vm.notchState == .open) } }
                     .background(GeometryReader { geo in
-                        Color.clear.preference(key: IslandPillWidthKey.self, value: geo.size.width)
+                        Color.clear
+                            .preference(key: IslandPillWidthKey.self, value: geo.size.width)
+                            .preference(key: IslandPillSizeKey.self, value: geo.size)
                     })
                     .overlay(alignment: .top) {
                         Rectangle()
@@ -164,7 +185,7 @@ struct ContentView: View {
                             .padding(.horizontal, topCornerRadius)
                     }
                     .shadow(
-                        color: ((vm.notchState == .open || isHovering) && Defaults[.enableShadow])
+                        color: ((vm.notchState == .open || isHovering) && Defaults[.enableShadow] && !wingsActive)
                             ? .black.opacity(0.7) : .clear, radius: Defaults[.cornerRadiusScaling] ? 6 : 4
                     )
                     .padding(
@@ -271,6 +292,13 @@ struct ContentView: View {
         .onPreferenceChange(IslandPillWidthKey.self) { width in
             if abs(width - pillWidth) > 0.5 { pillWidth = width }
         }
+        .onPreferenceChange(IslandPillSizeKey.self) { size in
+            guard vm.notchState == .closed, size.width > 0 else { return }
+            lastClosedPill = size
+            // While the bird folds, it lands on the pill the closed island will really show.
+            if wingsShown { wingPill = closedPillSize }
+        }
+        .onChange(of: vm.notchState) { _, state in updateWings(for: state) }
         .onReceive(NotificationCenter.default.publisher(for: .islandTopEdgeHit)) { note in
             guard vm.notchState == .closed, !coordinator.firstLaunch,
                   let uuid = note.object as? String,
@@ -337,6 +365,50 @@ struct ContentView: View {
         }
     }
 
+    /// Hoverbird wings: opening spreads the bird and fills it into the island; closing folds it back
+    /// into the pill. Springs keep their speed when the pointer comes and goes mid-flight.
+    private func updateWings(for state: NotchState) {
+        guard wingsEnabled else {
+            if wingsShown {
+                wingsShown = false
+                wingProgress = 0
+            }
+            return
+        }
+        wingGeneration += 1
+        let generation = wingGeneration
+        if state == .open {
+            if !wingsShown {
+                var instant = Transaction()
+                instant.disablesAnimations = true
+                withTransaction(instant) {
+                    wingPill = closedPillSize
+                    wingProgress = 0
+                    wingsShown = true
+                }
+            }
+            withAnimation(IslandMotionStyle.wingsOpen) { wingProgress = 1 }
+            Task { @MainActor in
+                try? await Task.sleep(for: IslandMotionStyle.wingsSettleDelay)
+                if generation == wingGeneration, vm.notchState == .open { featherDrift += 1 }
+            }
+        } else {
+            withAnimation(IslandMotionStyle.wingsClose, completionCriteria: .logicallyComplete) {
+                wingProgress = 0
+            } completion: {
+                // Back to the plain closed pill, unless the island reopened meanwhile.
+                guard generation == wingGeneration, vm.notchState == .closed else { return }
+                wingsShown = false
+            }
+        }
+    }
+
+    /// The closed pill the bird opens from and folds into: the measured closed island (wider while a
+    /// live activity shows), never narrower than the notch.
+    private var closedPillSize: CGSize {
+        CGSize(width: max(lastClosedPill.width, vm.closedNotchSize.width), height: vm.effectiveClosedNotchHeight)
+    }
+
     @ViewBuilder
     func NotchLayout() -> some View {
         VStack(alignment: .leading) {
@@ -373,6 +445,7 @@ struct ContentView: View {
                            BoringHeader()
                                .frame(height: max(24, vm.effectiveClosedNotchHeight))
                                .opacity(gestureProgress != 0 ? 1.0 - min(abs(gestureProgress) * 0.1, 0.3) : 1.0)
+                               .transition(wingsEnabled ? .wingReveal : .opacity)
                        } else {
                            Rectangle().fill(.clear).frame(width: vm.closedNotchSize.width - 20, height: vm.effectiveClosedNotchHeight)
                        }
@@ -439,6 +512,8 @@ struct ContentView: View {
                             IslandCalendarSection()
                         case .connectivity:
                             IslandConnectivitySection()
+                        case .windows:
+                            IslandWindowsSection()
                         case .shortcuts:
                             ShortcutsTabView()
                         case .monitor:
@@ -457,8 +532,7 @@ struct ContentView: View {
                             .transition(.scale(scale: 0.6).combined(with: .opacity))
                     }
                 }
-                .transition(
-                    .scale(scale: 0.8, anchor: .top)
+                .transition(wingsEnabled ? .wingReveal : .scale(scale: 0.8, anchor: .top)
                     .combined(with: .opacity)
                     .animation(.smooth(duration: 0.35))
                 )
@@ -832,5 +906,14 @@ struct IslandPillWidthKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
+    }
+}
+
+/// The island's measured size (the wings open from, and fold back into, the closed pill).
+struct IslandPillSizeKey: PreferenceKey {
+    static var defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        let next = nextValue()
+        value = CGSize(width: max(value.width, next.width), height: max(value.height, next.height))
     }
 }

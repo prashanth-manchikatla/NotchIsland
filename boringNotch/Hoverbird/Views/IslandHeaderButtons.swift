@@ -172,8 +172,11 @@ struct HeaderCircleButton<Label: View>: View {
     @State private var suppressTap = false
 
     var body: some View {
-        Capsule()
-            .fill(Color.white.opacity((hovering ? 0.14 : 0.0001) + (selected ? 0.12 : 0)))
+        ZStack {
+            Capsule().fill(Color.white.opacity(hovering ? 0.14 : 0.0001))
+            // The section this button opened: the hummingbird's plumage.
+            if selected { PlumageCapsule() }
+        }
             .frame(width: 26, height: 28)
             .overlay { label() }
             .overlay(alignment: .bottom) {

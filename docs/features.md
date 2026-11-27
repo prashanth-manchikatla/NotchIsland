@@ -17,12 +17,19 @@ tuned or switched off.
   blue, drawn on the macOS icon shape. The menu bar shows the same hummingbird, tinted for light and dark menu
   bars. Buttons and switches follow the accent colour in System Settings, like Apple's own apps.
 - The icon's source is `Resources/Icon/AppIcon.svg`; `Scripts/make_icons.sh` builds `Resources/AppIcon.icns`.
+- **A bird all the way through:** the island opens like a bird spreading its wings (see below), the hummingbird
+  keeps empty sections company (it hovers for a moment, then rests), a small flapping hummingbird replaces
+  spinners while something works, and selected tabs, buttons and zones wear its blue-to-violet plumage.
 
 ## The island
-## The island
 
-- **Black glass** with an adjustable tint, optional macOS 26 **Liquid Glass**, a subtle glass rim and
-  iPhone-style springs. The compact pill stays solid black so it melts into the camera housing.
+- **Black glass** with an adjustable tint, optional macOS 26 **Liquid Glass** and a subtle glass rim. The compact
+  pill stays solid black so it melts into the camera housing.
+- **Wings:** opening, a bird opens its wings and lower body beside the notch — coverts, secondaries, then the
+  primaries fanning out, with real feather detail — and then the island's glass fills out from the bird itself
+  until the bird has become the island. A few loose feathers drift down as it settles. Closing runs it backwards
+  and folds the wings into the notch. Prefer a plain spring? *Settings › Island › Motion* still has iPhone,
+  Smooth and Snappy; Reduce Motion uses the plain spring too.
 - **Opening:** hover the notch, flick the pointer to the top edge for an instant open, or swipe down
   with two fingers (up to close). The pill grows slightly as the pointer approaches. **Pin** keeps it open.
 - **Header:** Windows · Pin · Lock · Awake · Calendar · Camera · Connectivity.
@@ -172,9 +179,15 @@ A live view of how much AI you use, read from the logs your tools already keep o
 
 ## Windows
 
-- **Snap** the front window into halves, thirds, quarters and more (⌃⌥ shortcuts), with a frosted preview.
-- **Arrange:** a live mini-map of your windows; drag them between zones.
-- **Apps:** every open app with quit, plus Quit All and Force Quit.
+Everything lives inside the island (the first header button on the right). No other window opens unless you
+click **Expand**, which opens the larger panel where you left off.
+
+- **Snap:** 12 layouts — halves, top & bottom, thirds, ⅔ + ⅓, quarters and more. Click a zone and the front
+  window glides there (⌃⌥ shortcuts too). The line above names the zone you point at; **Restore** puts it back.
+- **Arrange:** pick a layout, drag windows between the zones of a mini screen (or in from the list), then
+  **Arrange**; after that, the real windows follow each drop. **Auto-fill** fills the zones in order.
+- **Apps:** every open app; hover to quit one, or **Quit All** (click twice) with Force Quit for apps that wait.
+- Hold the Windows button for quick actions (halves, fill, centre, restore, side by side, quarters, Quit All).
 
 ## Devices & files
 

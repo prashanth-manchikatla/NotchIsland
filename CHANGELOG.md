@@ -8,6 +8,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- **Wings:** the island opens like a bird spreading its wings — real feathers, coverts to primaries, with the
+  lower body and tail — then the island's glass fills out from the bird until it becomes the island; closing
+  folds it back into the notch. It's the new default; *Settings › Island › Motion* keeps the plain springs.
+- **A bird all the way through:** the hummingbird hovers in empty sections (Home when nothing plays,
+  Clipboard, Shelf, Notifications), a small flapping hummingbird replaces spinners while something works
+  (an AI agent, syncing, loading, quitting apps), loose feathers drift as the island opens, and selected
+  tabs, buttons and zones use the hummingbird's blue-to-violet plumage.
 - **Cinema mode** for Netflix, Prime Video and other streaming services: quiet island and held
   notifications during full-screen video ("while you watched" summary), ±10 s / Skip intro / mute /
   full-screen controls with time left, the full-screen **Theater** that uses the whole 1.54:1 screen
@@ -18,6 +25,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- **Windows now lives inside the island:** Snap (12 layouts), Arrange and Apps open in the island instead of a
+  separate panel. Only **Expand** opens the larger panel, on the same tab.
 - **New app icon — Midnight Glass:** a glass hummingbird hovering at the island, glowing on deep midnight blue,
   on the macOS icon shape. The menu bar glyph is the same hummingbird. The icon's source is now an SVG
   (`Resources/Icon/AppIcon.svg`) built by `Scripts/make_icons.sh`.

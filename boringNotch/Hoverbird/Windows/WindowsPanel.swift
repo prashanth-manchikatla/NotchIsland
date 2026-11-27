@@ -10,29 +10,39 @@
 //
 
 import AppKit
-import ScreenCaptureKit
 import SwiftUI
 
 // MARK: - Header button
 
 struct WindowsHeaderButton: View {
-    @ObservedObject private var controller = WindowsPanelController.shared
+    @ObservedObject private var coordinator = BoringViewCoordinator.shared
 
     var body: some View {
-        HeaderCircleButton(title: controller.isShown ? nil : "Windows",
+        let active = coordinator.currentView == .windows
+        HeaderCircleButton(title: "Windows",
                            help: "Snap & arrange windows, quit apps — hold for quick actions",
-                           tap: { controller.toggle() },
-                           menu: { IslandMenus.windowsMenu() }) {
+                           tap: toggle,
+                           menu: { IslandMenus.windowsMenu() },
+                           selected: active) {
             Image(systemName: "uiwindow.split.2x1")
-                .foregroundStyle(controller.isShown ? Color.cyan : Color.white)
+                .foregroundStyle(.white)
                 .imageScale(.medium)
+        }
+        .accessibilityIdentifier("header.windows")
+    }
+
+    /// Shows the Windows section inside the island, or goes back Home. (Only its Expand button
+    /// opens the larger panel.)
+    private func toggle() {
+        withAnimation(.smooth) {
+            coordinator.currentView = coordinator.currentView == .windows ? .home : .windows
         }
     }
 }
 
-/// The Windows panel lives in its own floating glass panel: it stays open while you snap and
-/// arrange (a popover closes as soon as another app comes forward), and clicking it doesn't
-/// take focus away from the app whose windows you're arranging.
+/// The larger Windows panel (the island section's Expand button): a floating glass panel that stays
+/// open while you snap and arrange, and clicking it doesn't take focus away from the app whose
+/// windows you're arranging.
 final class WindowsPanelWindow: NSPanel {
     override var canBecomeKey: Bool { true }
 }
@@ -41,6 +51,8 @@ final class WindowsPanelWindow: NSPanel {
 final class WindowsPanelController: NSObject, ObservableObject, NSWindowDelegate {
     static let shared = WindowsPanelController()
     @Published private(set) var isShown = false
+    /// Snap, Arrange or Apps — shared by the island section and the panel, so Expand keeps your place.
+    @Published var section: WindowsPanel.Section = .snap
     private var panel: WindowsPanelWindow?
 
     func toggle() { isShown ? close() : show() }
@@ -145,27 +157,26 @@ struct WindowsPanel: View {
         }
     }
 
-    @State private var section: Section = .snap
+    @ObservedObject private var controller = WindowsPanelController.shared
     @Namespace private var segment
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Image(systemName: "uiwindow.split.2x1").font(.system(size: 14, weight: .semibold)).foregroundStyle(.cyan)
+                Image(systemName: "uiwindow.split.2x1").font(.system(size: 14, weight: .semibold)).foregroundStyle(Plumage.wingLight)
                 Text("Windows").font(.system(size: 14, weight: .bold))
                 Spacer()
                 HStack(spacing: 2) {
                     ForEach(Section.allCases) { item in
-                        Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { section = item } } label: {
+                        Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { controller.section = item } } label: {
                             Label(item.rawValue, systemImage: item.symbol)
                                 .font(.system(size: 11, weight: .semibold))
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
-                                .foregroundStyle(section == item ? Color.primary : Color.secondary)
+                                .foregroundStyle(controller.section == item ? Color.primary : Color.secondary)
                                 .background {
-                                    if section == item {
-                                        Capsule().fill(.thinMaterial)
-                                            .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.5))
+                                    if controller.section == item {
+                                        PlumageCapsule()
                                             .matchedGeometryEffect(id: "segment", in: segment)
                                     }
                                 }
@@ -190,7 +201,7 @@ struct WindowsPanel: View {
                 }
             }
             Group {
-                switch section {
+                switch controller.section {
                 case .snap: SnapSection()
                 case .arrange: ArrangeSection()
                 case .apps: AppsSection()
@@ -204,7 +215,7 @@ struct WindowsPanel: View {
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.white.opacity(0.18), lineWidth: 0.5))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .environment(\.colorScheme, .dark)
-        .animation(.spring(response: 0.35, dampingFraction: 0.86), value: section)
+        .animation(.spring(response: 0.35, dampingFraction: 0.86), value: controller.section)
     }
 }
 
@@ -241,7 +252,7 @@ struct LayoutThumb: View {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(Color.primary.opacity(selected ? 0.12 : (hovering ? 0.09 : 0.05)))
                         .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .stroke(selected ? Color.cyan.opacity(0.8) : Color.primary.opacity(0.12), lineWidth: selected ? 1.5 : 0.5))
+                            .stroke(selected ? Plumage.wingLight.opacity(0.85) : Color.primary.opacity(0.12), lineWidth: selected ? 1.5 : 0.5))
                     ForEach(Array(layout.tiles.enumerated()), id: \.offset) { index, tile in
                         ThumbZone(rect: Self.zone(tile, in: geo.size, inset: 4, gap: 3),
                                   highlighted: hoveredZone == index, selected: selected,
@@ -276,7 +287,8 @@ struct LayoutThumb: View {
         let tap: () -> Void
 
         var body: some View {
-            let fill: Color = highlighted ? Color.cyan.opacity(0.85) : (selected ? Color.cyan.opacity(0.35) : Color.primary.opacity(0.16))
+            let fill: AnyShapeStyle = highlighted ? AnyShapeStyle(Plumage.sheen(0.9))
+                : (selected ? AnyShapeStyle(Plumage.sheen(0.4)) : AnyShapeStyle(Color.primary.opacity(0.16)))
             let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(fill)
                 .frame(width: rect.width, height: rect.height)
@@ -351,13 +363,9 @@ private struct SnapSection: View {
 // MARK: - Arrange
 
 private struct ArrangeSection: View {
-    @State private var layout: TileLayout = TileLayouts.halves
-    @State private var windows: [WindowInfo] = []
-    @State private var slots: [String?] = []
+    @StateObject private var model = ArrangeModel()
     @State private var dragging: (id: String, point: CGPoint)?
     @State private var dropTarget: Int?
-    @State private var applied = false
-    @State private var thumbnails: [String: NSImage] = [:]
 
     private let mapSize = CGSize(width: 436, height: 250)
 
@@ -366,7 +374,7 @@ private struct ArrangeSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(TileLayouts.arrange) { item in
-                        LayoutThumb(layout: item, selected: item == layout, onSelect: { choose(item) })
+                        LayoutThumb(layout: item, selected: item == model.layout, onSelect: { model.choose(item) })
                             .frame(width: 66)
                     }
                 }
@@ -378,8 +386,8 @@ private struct ArrangeSection: View {
                     map
                     strip
                 }
-                if let dragging, let window = windows.first(where: { $0.id == dragging.id }) {
-                    WindowCard(window: window, thumbnail: thumbnails[window.id], compact: true)
+                if let dragging, let window = model.window(dragging.id) {
+                    WindowCard(window: window, thumbnail: model.thumbnails[window.id], compact: true)
                         .frame(width: 150, height: 54)
                         .scaleEffect(1.05)
                         .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
@@ -389,23 +397,23 @@ private struct ArrangeSection: View {
             }
             .coordinateSpace(name: "arrange")
             HStack(spacing: 8) {
-                Text(applied ? "Drag windows between zones — they move as you drop." : "Drag to rearrange, then Arrange.")
+                Text(model.applied ? "Drag windows between zones — they move as you drop." : "Drag to rearrange, then Arrange.")
                     .font(.system(size: 10.5)).foregroundStyle(.secondary)
                 Spacer()
-                GlassButton(title: "Auto-fill", symbol: "wand.and.stars") { autofill() }
-                GlassButton(title: "Arrange", symbol: "rectangle.split.2x2.fill", prominent: true) { apply() }
+                GlassButton(title: "Auto-fill", symbol: "wand.and.stars") { model.autofill() }
+                GlassButton(title: "Arrange", symbol: "rectangle.split.2x2.fill", prominent: true) { model.apply() }
             }
         }
-        .onAppear(perform: load)
+        .onAppear { model.load(thumbnails: true) }
     }
 
     // The screen in miniature with the assigned windows.
     private var map: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(LinearGradient(colors: [Color.cyan.opacity(0.10), Color.purple.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(LinearGradient(colors: [Plumage.wingLight.opacity(0.10), Plumage.tail.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.primary.opacity(0.12), lineWidth: 0.5))
-            ForEach(Array(layout.tiles.enumerated()), id: \.offset) { index, tile in
+            ForEach(Array(model.layout.tiles.enumerated()), id: \.offset) { index, tile in
                 let rect = LayoutThumb.zone(tile, in: mapSize, inset: 8, gap: 8)
                 zoneView(index: index)
                     .frame(width: rect.width, height: rect.height)
@@ -419,18 +427,17 @@ private struct ArrangeSection: View {
 
     @ViewBuilder
     private func zoneView(index: Int) -> some View {
-        let id = index < slots.count ? slots[index] : nil
-        let window = id.flatMap { id in windows.first { $0.id == id } }
+        let window = model.window(index < model.slots.count ? model.slots[index] : nil)
         let highlighted = dropTarget == index
         ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(highlighted ? Color.cyan.opacity(0.28) : Color.primary.opacity(0.05))
+                .fill(highlighted ? AnyShapeStyle(Plumage.sheen(0.3)) : AnyShapeStyle(Color.primary.opacity(0.05)))
                 .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(highlighted ? Color.cyan : Color.primary.opacity(0.18),
+                    .strokeBorder(highlighted ? Plumage.wingLight : Color.primary.opacity(0.18),
                                   style: StrokeStyle(lineWidth: highlighted ? 1.5 : 0.8, dash: window == nil ? [5, 4] : [])))
             if let window {
-                WindowCard(window: window, thumbnail: thumbnails[window.id]) {
-                    close(window)
+                WindowCard(window: window, thumbnail: model.thumbnails[window.id]) {
+                    model.close(window)
                 }
                 .opacity(dragging?.id == window.id ? 0.35 : 1)
                 .gesture(drag(for: window.id))
@@ -440,14 +447,13 @@ private struct ArrangeSection: View {
                     .font(.system(size: 10.5, weight: .medium)).foregroundStyle(.secondary)
             }
         }
-        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: slots)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: model.slots)
         .animation(.easeOut(duration: 0.12), value: highlighted)
     }
 
     // Windows not placed in the layout.
     private var strip: some View {
-        let placed = Set(slots.compactMap { $0 })
-        let rest = windows.filter { !placed.contains($0.id) }
+        let rest = model.unplaced
         return VStack(alignment: .leading, spacing: 5) {
             Text(rest.isEmpty ? "All windows are placed" : "Other windows — drag into a zone")
                 .font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
@@ -482,86 +488,21 @@ private struct ArrangeSection: View {
                 if target != dropTarget { withAnimation(.easeOut(duration: 0.12)) { dropTarget = target } }
             }
             .onEnded { value in
-                drop(id, at: value.location)
+                if let target = zoneIndex(at: value.location) {
+                    model.drop(id, into: target)
+                } else if value.location.y > mapSize.height {
+                    model.drop(id, into: nil) // dropped on the strip: take it out of the layout
+                }
                 dragging = nil
                 dropTarget = nil
             }
     }
 
     private func zoneIndex(at point: CGPoint) -> Int? {
-        for (index, tile) in layout.tiles.enumerated() where LayoutThumb.zone(tile, in: mapSize, inset: 8, gap: 8).contains(point) {
+        for (index, tile) in model.layout.tiles.enumerated() where LayoutThumb.zone(tile, in: mapSize, inset: 8, gap: 8).contains(point) {
             return index
         }
         return nil
-    }
-
-    private func drop(_ id: String, at point: CGPoint) {
-        let source = slots.firstIndex(of: id)
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-            if let target = zoneIndex(at: point) {
-                let occupant = slots[target]
-                slots[target] = id
-                if let source, source != target { slots[source] = occupant }
-            } else if point.y > mapSize.height, let source {
-                slots[source] = nil // dropped on the strip: take it out of the layout
-            }
-        }
-        if applied { apply() } // live: the real windows glide to their new places
-    }
-
-    private func load() {
-        windows = WindowTiler.shared.windows()
-        autofill()
-        Task { await loadThumbnails() }
-    }
-
-    private func choose(_ item: TileLayout) {
-        let kept = slots.compactMap { $0 }
-        let others = windows.map(\.id).filter { !kept.contains($0) }
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-            layout = item
-            slots = Array((kept + others).prefix(item.tiles.count)).map { Optional($0) }
-            while slots.count < item.tiles.count { slots.append(nil) }
-        }
-        if applied { apply() }
-    }
-
-    private func autofill() {
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-            slots = Array(windows.prefix(layout.tiles.count)).map { Optional($0.id) }
-            while slots.count < layout.tiles.count { slots.append(nil) }
-        }
-    }
-
-    private func apply() {
-        let assigned = slots.map { id in id.flatMap { id in windows.first { $0.id == id } } }
-        WindowTiler.shared.arrange(layout, windows: assigned)
-        applied = true
-    }
-
-    private func close(_ window: WindowInfo) {
-        AppQuitter.shared.quit(RunningAppInfo(id: window.pid, name: window.appName, bundleID: window.bundleID, isHidden: false, isActive: false))
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-            windows.removeAll { $0.pid == window.pid }
-            slots = slots.map { id in id.flatMap { id in windows.contains { $0.id == id } ? id : nil } }
-        }
-    }
-
-    /// Small live pictures of the windows (Screen Recording is already allowed).
-    private func loadThumbnails() async {
-        guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true) else { return }
-        for window in windows.prefix(10) {
-            guard let number = window.windowNumber, let scWindow = content.windows.first(where: { $0.windowID == number }) else { continue }
-            let configuration = SCStreamConfiguration()
-            configuration.width = 360
-            configuration.height = max(60, Int(360 * scWindow.frame.height / max(1, scWindow.frame.width)))
-            configuration.showsCursor = false
-            if let image = try? await SCScreenshotManager.captureImage(contentFilter: SCContentFilter(desktopIndependentWindow: scWindow),
-                                                                       configuration: configuration) {
-                let picture = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
-                withAnimation(.easeOut(duration: 0.25)) { thumbnails[window.id] = picture }
-            }
-        }
     }
 }
 

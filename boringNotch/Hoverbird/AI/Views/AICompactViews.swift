@@ -37,8 +37,8 @@ struct AICompactView: View {
             if let agent = store.workingAgents.first {
                 let extra = store.workingAgents.count - 1
                 IslandCompactRow(sideWidth: extra > 0 ? 62 : 50) {
-                    pulsing(Image(systemName: agent.provider.symbol)
-                        .font(.system(size: iconSize, weight: .bold)).foregroundStyle(agent.provider.tint))
+                    // An agent at work: a small flapping hummingbird in the agent's colour.
+                    BirdActivityIndicator(size: iconSize + 3, tint: agent.provider.tint)
                 } trailing: {
                     HStack(spacing: 3) {
                         TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -98,8 +98,7 @@ struct AIBubbleView: View {
             Image(systemName: "exclamationmark").font(.system(size: icon, weight: .heavy)).foregroundStyle(.orange)
         case .working:
             let provider = store.workingAgents.first?.provider ?? .claude
-            Image(systemName: provider.symbol).font(.system(size: icon, weight: .bold)).foregroundStyle(provider.tint)
-                .phaseAnimator([1.0, 0.45]) { v, phase in v.opacity(phase) } animation: { _ in .easeInOut(duration: 1.0) }
+            BirdActivityIndicator(size: icon + 3, tint: provider.tint)
         case .usage:
             let w = store.snapshot.detectedProviders.compactMap(\.tightestLimit).filter { !$0.isEstimate }
                 .max { ($0.usedPercent ?? 0) < ($1.usedPercent ?? 0) }

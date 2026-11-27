@@ -693,10 +693,17 @@ private struct NotificationsCard: View {
                     XPCHelperClient.shared.requestAccessibilityAuthorization()
                 }
             } else if items.isEmpty {
-                Text(mirror.isSyncing ? "Syncing with Notification Center…"
-                     : (unreadOnly && !mirror.recent.isEmpty ? "All caught up — no unread notifications."
-                        : "No notifications. New ones — including your iPhone's — appear here."))
-                    .font(.system(size: 11)).foregroundStyle(.gray).lineLimit(3)
+                if mirror.isSyncing {
+                    HStack(spacing: 8) {
+                        BirdActivityIndicator(size: 16)
+                        Text("Syncing with Notification Center…").font(.system(size: 11)).foregroundStyle(.gray)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 100)
+                } else if unreadOnly && !mirror.recent.isEmpty {
+                    BirdEmptyState(title: "All caught up", detail: "No unread notifications.")
+                } else {
+                    BirdEmptyState(title: "No notifications", detail: "New ones — including your iPhone's — appear here.")
+                }
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 5) {

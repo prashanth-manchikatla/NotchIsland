@@ -33,6 +33,7 @@ public enum NotchViews {
     case timers
     case calendar
     case connectivity
+    case windows
     case shortcuts
     case monitor
     case ai

@@ -45,7 +45,7 @@ struct ShortcutsTabView: View {
     private var content: some View {
         if !manager.loaded {
             HStack(spacing: 8) {
-                ProgressView().controlSize(.small)
+                BirdActivityIndicator(size: 16)
                 Text("Loading your shortcuts…").font(.system(size: 11)).foregroundStyle(.gray)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -129,7 +129,7 @@ private struct ShortcutTile: View {
     private var stateIcon: some View {
         switch manager.states[item.id] {
         case .running:
-            ProgressView().controlSize(.small).tint(.white)
+            BirdActivityIndicator(size: 16, tint: .white)
         case .done:
             Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
         case .failed:

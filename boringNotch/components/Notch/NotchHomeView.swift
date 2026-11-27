@@ -192,9 +192,7 @@ struct MusicControlsView: View {
                     $musicManager.songTitle, font: .headline, nsFont: .headline, textColor: .white,
                     frameWidth: musicManager.skipPending ? max(40, width - 22) : width)
                 if musicManager.skipPending {
-                    ProgressView()
-                        .controlSize(.small)
-                        .scaleEffect(0.7)
+                    BirdActivityIndicator(size: 14)
                         .frame(width: 16, height: 16)
                         .transition(.opacity)
                 }
@@ -684,9 +682,9 @@ struct NothingPlayingView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color.white.opacity(0.05))
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.white.opacity(0.08)))
-                Image(systemName: "music.note")
-                    .font(.system(size: 30, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.22))
+                // The hummingbird keeps the seat warm: it hovers for a moment, then rests.
+                HummingbirdView(motion: .flutter(2.2))
+                    .frame(width: 66, height: 76)
             }
             .frame(width: 108, height: 108)
             .padding(.leading, 5)

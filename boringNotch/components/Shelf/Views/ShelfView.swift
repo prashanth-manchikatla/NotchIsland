@@ -80,18 +80,7 @@ struct ShelfView: View {
     var content: some View {
         Group {
             if tvm.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "tray.and.arrow.down")
-                        .symbolVariant(.fill)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.white, .gray)
-                        .imageScale(.large)
-                    
-                    Text("Drop files here")
-                        .foregroundStyle(.gray)
-                        .font(.system(.title3, design: .rounded))
-                        .fontWeight(.medium)
-                }
+                BirdEmptyState(title: "Drop files here", detail: "They wait in the shelf until you drag them out.")
             } else {
                 ScrollView(.horizontal) {
                     HStack(spacing: spacing) {

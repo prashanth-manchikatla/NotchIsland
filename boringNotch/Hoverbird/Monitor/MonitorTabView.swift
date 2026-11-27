@@ -28,7 +28,7 @@ struct MonitorTabView: View {
                 PowerTile(snapshot: s, history: monitor.history).frame(minWidth: 112, maxWidth: .infinity)
             } else {
                 HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
+                    BirdActivityIndicator(size: 16)
                     Text("Reading sensors…").font(.system(size: 11)).foregroundStyle(.gray)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -72,7 +72,8 @@ struct ClipboardTabView: View {
             if !enabled {
                 EmptyStateLine(symbol: "doc.on.clipboard", text: "Clipboard history is off — turn it on in Settings › Clipboard")
             } else if filtered.isEmpty {
-                EmptyStateLine(symbol: "doc.on.clipboard", text: filter == .all ? "Copy anything — it stacks up here. Press ⌘C twice to open." : "Nothing here yet")
+                BirdEmptyState(title: filter == .all ? "Nothing copied yet" : "Nothing here yet",
+                               detail: filter == .all ? "Copy anything — it stacks up here. Press ⌘C twice to open." : nil)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 8) {
