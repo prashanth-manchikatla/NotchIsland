@@ -55,6 +55,40 @@ enum TileLayouts {
     static let wideCenter = TileLayout(id: "wideCenter", name: "Wide Center",
                                        tiles: [Tile(0, 0, 0.25, 1), Tile(0.25, 0, 0.5, 1), Tile(0.75, 0, 0.25, 1)],
                                        names: ["Left Quarter", "Center Half", "Right Quarter"])
+    static let twoAndBottom = TileLayout(id: "twoBottom", name: "Two + Bottom",
+                                         tiles: [Tile(0, 0, 0.5, 0.5), Tile(0.5, 0, 0.5, 0.5), Tile(0, 0.5, 1, 0.5)],
+                                         names: ["Top Left", "Top Right", "Bottom Half"])
+    static let columns4 = TileLayout(id: "columns4", name: "4 Columns",
+                                     tiles: [Tile(0, 0, 0.25, 1), Tile(0.25, 0, 0.25, 1), Tile(0.5, 0, 0.25, 1), Tile(0.75, 0, 0.25, 1)],
+                                     names: ["First Column", "Second Column", "Third Column", "Fourth Column"])
+    static let mainAndThree = TileLayout(id: "mainThree", name: "Main + 3",
+                                         tiles: [Tile(0, 0, 0.5, 1), Tile(0.5, 0, 0.5, 1 / 3), Tile(0.5, 1 / 3, 0.5, 1 / 3),
+                                                 Tile(0.5, 2 / 3, 0.5, 1 / 3)],
+                                         names: ["Left Half", "Right Top", "Right Middle", "Right Bottom"])
+    static let topAndThree = TileLayout(id: "topThree", name: "Top + 3",
+                                        tiles: [Tile(0, 0, 1, 0.5), Tile(0, 0.5, 1 / 3, 0.5), Tile(1 / 3, 0.5, 1 / 3, 0.5),
+                                                Tile(2 / 3, 0.5, 1 / 3, 0.5)],
+                                        names: ["Top Half", "Bottom Left", "Bottom Center", "Bottom Right"])
+    static let twoOverThree = TileLayout(id: "twoThree", name: "2 + 3",
+                                         tiles: [Tile(0, 0, 0.5, 0.5), Tile(0.5, 0, 0.5, 0.5),
+                                                 Tile(0, 0.5, 1 / 3, 0.5), Tile(1 / 3, 0.5, 1 / 3, 0.5), Tile(2 / 3, 0.5, 1 / 3, 0.5)],
+                                         names: ["Top Left", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"])
+    static let threeOverTwo = TileLayout(id: "threeTwo", name: "3 + 2",
+                                         tiles: [Tile(0, 0, 1 / 3, 0.5), Tile(1 / 3, 0, 1 / 3, 0.5), Tile(2 / 3, 0, 1 / 3, 0.5),
+                                                 Tile(0, 0.5, 0.5, 0.5), Tile(0.5, 0.5, 0.5, 0.5)],
+                                         names: ["Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Right"])
+    static let mainAndFour = TileLayout(id: "mainFour", name: "Main + 4",
+                                        tiles: [Tile(0, 0, 0.5, 1), Tile(0.5, 0, 0.25, 0.5), Tile(0.75, 0, 0.25, 0.5),
+                                                Tile(0.5, 0.5, 0.25, 0.5), Tile(0.75, 0.5, 0.25, 0.5)],
+                                        names: ["Left Half", "Top Middle", "Top Right", "Bottom Middle", "Bottom Right"])
+    static let grid3x2 = TileLayout(id: "grid3x2", name: "3 × 2",
+                                    tiles: [Tile(0, 0, 1 / 3, 0.5), Tile(1 / 3, 0, 1 / 3, 0.5), Tile(2 / 3, 0, 1 / 3, 0.5),
+                                            Tile(0, 0.5, 1 / 3, 0.5), Tile(1 / 3, 0.5, 1 / 3, 0.5), Tile(2 / 3, 0.5, 1 / 3, 0.5)],
+                                    names: ["Top Left", "Top Center", "Top Right", "Bottom Left", "Bottom Center", "Bottom Right"])
+    static let grid2x3 = TileLayout(id: "grid2x3", name: "2 × 3",
+                                    tiles: [Tile(0, 0, 0.5, 1 / 3), Tile(0.5, 0, 0.5, 1 / 3), Tile(0, 1 / 3, 0.5, 1 / 3),
+                                            Tile(0.5, 1 / 3, 0.5, 1 / 3), Tile(0, 2 / 3, 0.5, 1 / 3), Tile(0.5, 2 / 3, 0.5, 1 / 3)],
+                                    names: ["Top Left", "Top Right", "Middle Left", "Middle Right", "Bottom Left", "Bottom Right"])
     static let fill = TileLayout(id: "fill", name: "Fill", tiles: [Tile(0, 0, 1, 1)], names: ["Fill Screen"])
     static let center = TileLayout(id: "center", name: "Center", tiles: [Tile(0.17, 0.1, 0.66, 0.8)], names: ["Center"])
     static let almost = TileLayout(id: "almost", name: "Almost Full", tiles: [Tile(0.04, 0.04, 0.92, 0.92)], names: ["Almost Full"])
@@ -62,9 +96,24 @@ enum TileLayouts {
     /// Snap Layouts grid (click a zone to put the front window there).
     static let snap: [TileLayout] = [halves, rows, thirds, twoThirdsLeft, twoThirdsRight, quarters,
                                      halfAndQuarters, quartersAndHalf, topAndTwo, wideCenter, fill, center]
-    /// Multi-window arrangements.
-    static let arrange: [TileLayout] = [halves, twoThirdsLeft, twoThirdsRight, thirds, rows, quarters,
-                                        halfAndQuarters, quartersAndHalf, topAndTwo, wideCenter]
+
+    /// How many windows Arrange can split the screen into.
+    static let splitCounts = 2...6
+
+    /// Arrange layouts for each split count; the first one is the default for that count.
+    static let arrangeByCount: [Int: [TileLayout]] = [
+        2: [halves, rows, twoThirdsLeft, twoThirdsRight],
+        3: [thirds, halfAndQuarters, quartersAndHalf, topAndTwo, twoAndBottom, wideCenter],
+        4: [quarters, columns4, mainAndThree, topAndThree],
+        5: [twoOverThree, threeOverTwo, mainAndFour],
+        6: [grid3x2, grid2x3],
+    ]
+
+    static func arrange(for count: Int) -> [TileLayout] {
+        arrangeByCount[min(max(count, splitCounts.lowerBound), splitCounts.upperBound)] ?? [halves]
+    }
+
+    static func preferred(for count: Int) -> TileLayout { arrange(for: count)[0] }
 }
 
 // MARK: - Windows

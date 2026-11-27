@@ -61,7 +61,7 @@ Play a video on YouTube — in any browser or as a web app — or in a player li
 <td width="50%" valign="top">
 
 ### 🪟 Window snapping
-Snap the front window into halves, thirds, quarters and more — from the island or with ⌃⌥ shortcuts. **Arrange** shows a live mini-map of your windows to drag between zones; **Apps** quits apps in one place.
+Snap the front window into halves, thirds, quarters and more — from the island or with ⌃⌥ shortcuts. **Arrange** splits the screen between the windows you pick (2–6), in the order you click them — swap zones by dragging or clicking two; **Apps** quits apps in one place.
 
 </td>
 <td width="50%" valign="top">
@@ -186,7 +186,7 @@ Text, links, colours, images and files you copied, with pins and filters. Copied
 | **Clipboard** | History of text, links, colours, images and files; pinning; tracking stripped from copied links; paste as plain text. |
 | **Notifications** | Mirrors notification banners (including your iPhone's), with read, copy OTP, open, mark read and clear. |
 | **Meetings** | Mute the microphone for every app at once (⌃⌥M), a "Muted" indicator during calls, camera-in-use alerts, one-click Join for upcoming meetings. |
-| **Windows** | Snap layouts (halves, thirds, quarters…), a live mini-map to arrange windows, quit apps. |
+| **Windows** | Snap layouts (halves, thirds, quarters…), split the screen between the windows you pick (2–6, in your order), quit apps. |
 | **Devices** | AirPods and Bluetooth batteries, charging, connectivity, battery alerts at your levels, downloads and drives. |
 | **Monitor** | CPU (per cluster), GPU, memory, power and temperatures — no admin rights needed. |
 | **Awake** | Keep the Mac awake for a while, until a time, or with the lid closed. |

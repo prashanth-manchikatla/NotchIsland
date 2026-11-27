@@ -22,6 +22,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   the screen with the smallest change; in the Theater, A changes the picture and a note says what it trims).
 - Cinema shows the movie or episode's real title, key art and time left for Netflix (in its web app, a
   browser or the Theater) — Netflix itself tells macOS only "Netflix" and no time.
+- **Windows › Arrange picks and orders your windows:** split the screen into 2–6 (new 4-, 5- and 6-window
+  layouts), click the windows in the order you want them (zone 1, 2, 3…), and swap zones by dragging one onto
+  another or clicking two. The island and the Expand panel share the same choice.
 
 ### Changed
 
@@ -35,6 +38,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Fixed
 
 - `Scripts/setup-signing.sh` works with Homebrew's OpenSSL 4 (it now uses macOS's own `openssl`).
+- Windows › Snap: pointing at a zone on the left or top of a layout lit up — and named — a different zone, while
+  a click still snapped to the zone under the pointer. The highlight now always matches the zone you point at,
+  in the island and in the Expand panel.
 - Pressing play after a video is already full screen now quiets the island too.
 - The connectivity button now shows Wi-Fi, hotspot, Ethernet, VPN and Bluetooth details inside the
   island instead of in a separate popover.

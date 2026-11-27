@@ -184,8 +184,13 @@ click **Expand**, which opens the larger panel where you left off.
 
 - **Snap:** 12 layouts — halves, top & bottom, thirds, ⅔ + ⅓, quarters and more. Click a zone and the front
   window glides there (⌃⌥ shortcuts too). The line above names the zone you point at; **Restore** puts it back.
-- **Arrange:** pick a layout, drag windows between the zones of a mini screen (or in from the list), then
-  **Arrange**; after that, the real windows follow each drop. **Auto-fill** fills the zones in order.
+- **Arrange:** choose how many windows share the screen (**Split** 2–6) and a layout for that many, then click
+  windows in the list in the order you want them — the first goes into zone 1, the next into zone 2, and so on
+  (every zone shows its number). Click a window again to take it out; picking one more than the layout holds
+  adds a zone. To reorder, drag a zone onto another or click two zones to swap them; click a zone and then a
+  window to put that window there. **Auto-fill** fills the empty zones with your front-most windows, and
+  **Arrange** moves them — after that, each swap moves the real windows too. **Expand** shows the same choice
+  larger, with live pictures of the windows.
 - **Apps:** every open app; hover to quit one, or **Quit All** (click twice) with Force Quit for apps that wait.
 - Hold the Windows button for quick actions (halves, fill, centre, restore, side by side, quarters, Quit All).
 

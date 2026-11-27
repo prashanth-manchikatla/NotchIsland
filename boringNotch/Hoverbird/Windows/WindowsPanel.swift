@@ -4,8 +4,9 @@
 //
 //  The Windows panel (header button, right side):
 //   • Snap — Windows-style Snap Layouts: click a zone, the front window glides there.
-//   • Arrange — a live mini-map of your screen: pick a layout, drag windows between
-//     zones (they swap and move as you drop), drop new ones in, close apps from there.
+//   • Arrange — pick how many windows share the screen (2–6) and the layout, then click
+//     windows in the order you want them (zone 1, 2, 3…). Swap zones by dragging one onto
+//     another or clicking two; after Arrange, changes move the windows right away.
 //   • Apps — every open app; ✕ to quit one, or Quit All (Hoverbird stays open).
 //
 
@@ -223,7 +224,8 @@ struct WindowsPanel: View {
 
 /// A tiny screen with the layout's zones. Click a zone (Snap) or the whole thing (Arrange).
 /// Zones and thumbnails are real buttons: plain tap gestures miss the first click in a panel
-/// that isn't the key window.
+/// that isn't the key window. The zone under the pointer comes from the zones' geometry (see
+/// IslandLayoutThumb), and zones are placed with `.position`, not `.offset`.
 struct LayoutThumb: View {
     let layout: TileLayout
     var selected = false
@@ -248,24 +250,28 @@ struct LayoutThumb: View {
     private func content(interactiveZones: Bool) -> some View {
         VStack(spacing: 4) {
             GeometryReader { geo in
+                let rects = layout.tiles.map { Self.zone($0, in: geo.size, inset: 4, gap: 3) }
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(Color.primary.opacity(selected ? 0.12 : (hovering ? 0.09 : 0.05)))
                         .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
                             .stroke(selected ? Plumage.wingLight.opacity(0.85) : Color.primary.opacity(0.12), lineWidth: selected ? 1.5 : 0.5))
-                    ForEach(Array(layout.tiles.enumerated()), id: \.offset) { index, tile in
-                        ThumbZone(rect: Self.zone(tile, in: geo.size, inset: 4, gap: 3),
+                    ForEach(Array(rects.enumerated()), id: \.offset) { index, rect in
+                        ThumbZone(size: rect.size,
                                   highlighted: hoveredZone == index, selected: selected,
                                   name: layout.names[min(index, layout.names.count - 1)],
                                   identifier: "snap-\(layout.id)-\(index)",
                                   interactive: interactiveZones,
-                                  hover: { inside in
-                                      withAnimation(.easeOut(duration: 0.12)) {
-                                          if inside { hoveredZone = index } else if hoveredZone == index { hoveredZone = nil }
-                                      }
-                                  },
-                                  tap: { onZone?(tile) })
+                                  tap: { onZone?(layout.tiles[index]) })
+                            .position(x: rect.midX, y: rect.midY)
                     }
+                }
+                .contentShape(Rectangle())
+                .onContinuousHover(coordinateSpace: .local) { phase in
+                    guard interactiveZones else { return }
+                    var next: Int?
+                    if case .active(let point) = phase { next = IslandLayoutThumb.zoneIndex(at: point, in: rects, slack: 2) }
+                    if next != hoveredZone { withAnimation(.easeOut(duration: 0.12)) { hoveredZone = next } }
                 }
             }
             .aspectRatio(1.6, contentMode: .fit)
@@ -277,30 +283,26 @@ struct LayoutThumb: View {
     }
 
     private struct ThumbZone: View {
-        let rect: CGRect
+        let size: CGSize
         let highlighted: Bool
         let selected: Bool
         let name: String
         let identifier: String
         let interactive: Bool
-        let hover: (Bool) -> Void
         let tap: () -> Void
 
         var body: some View {
             let fill: AnyShapeStyle = highlighted ? AnyShapeStyle(Plumage.sheen(0.9))
                 : (selected ? AnyShapeStyle(Plumage.sheen(0.4)) : AnyShapeStyle(Color.primary.opacity(0.16)))
-            let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(fill)
-                .frame(width: rect.width, height: rect.height)
+            let shape = RoundedRectangle(cornerRadius: 4, style: .continuous).fill(fill)
             if interactive {
                 Button(action: tap) { shape.contentShape(Rectangle()) }
                     .buttonStyle(.plain)
-                    .offset(x: rect.minX, y: rect.minY)
-                    .onHover(perform: hover)
+                    .frame(width: size.width, height: size.height)
                     .help(name)
                     .accessibilityIdentifier(identifier)
             } else {
-                shape.offset(x: rect.minX, y: rect.minY).allowsHitTesting(false)
+                shape.frame(width: size.width, height: size.height).allowsHitTesting(false)
             }
         }
     }
@@ -362,199 +364,78 @@ private struct SnapSection: View {
 
 // MARK: - Arrange
 
+/// The island's Arrange, larger: live pictures in the zones, two columns of windows. Same model, so
+/// what you picked in the island is still picked here.
 private struct ArrangeSection: View {
-    @StateObject private var model = ArrangeModel()
-    @State private var dragging: (id: String, point: CGPoint)?
+    @ObservedObject private var model = ArrangeModel.shared
+    @State private var drag: ArrangeDrag?
     @State private var dropTarget: Int?
+    @State private var mapFrame: CGRect = .zero
 
-    private let mapSize = CGSize(width: 436, height: 250)
+    private static let space = "panelArrange"
+    private static let mapSize = CGSize(width: 436, height: 196)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(TileLayouts.arrange) { item in
-                        LayoutThumb(layout: item, selected: item == model.layout, onSelect: { model.choose(item) })
-                            .frame(width: 66)
-                    }
-                }
-                .padding(.vertical, 2)
-                .padding(.horizontal, 1)
+            HStack(spacing: 8) {
+                Text("Split into").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                SplitCountPicker(model: model, idPrefix: "panel", large: true)
+                Spacer(minLength: 0)
+                Text(model.placedCount == 0 ? "No windows picked yet" : "\(model.placedCount) of \(model.count) zones filled")
+                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
             }
+            ArrangeLayoutPicker(model: model, thumb: CGSize(width: 66, height: 41), columns: 6, idPrefix: "panel", showsNames: true)
             ZStack(alignment: .topLeading) {
-                VStack(alignment: .leading, spacing: 10) {
-                    map
-                    strip
+                VStack(alignment: .leading, spacing: 8) {
+                    ArrangeMap(model: model, size: Self.mapSize, space: Self.space, idPrefix: "panel", large: true,
+                               drag: drag, dropTarget: dropTarget, onDrag: dragChanged, onDrop: dropped)
+                    HStack(spacing: 6) {
+                        Text("Windows — click them in the order you want them")
+                            .font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        if model.placedCount > 0 {
+                            Button("Clear") { model.clear() }
+                                .buttonStyle(.plain)
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(Plumage.wingLight)
+                                .accessibilityIdentifier("panel.arrange.clear")
+                        }
+                    }
+                    ArrangeWindowList(model: model, space: Self.space, idPrefix: "panel", large: true, columns: 2,
+                                      drag: drag, onDrag: dragChanged, onDrop: dropped)
+                        .frame(height: 84)
                 }
-                if let dragging, let window = model.window(dragging.id) {
-                    WindowCard(window: window, thumbnail: model.thumbnails[window.id], compact: true)
-                        .frame(width: 150, height: 54)
-                        .scaleEffect(1.05)
-                        .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
-                        .position(dragging.point)
+                if let drag, let window = model.window(drag.id) {
+                    WindowChip(window: window)
+                        .scaleEffect(1.06)
+                        .shadow(color: .black.opacity(0.35), radius: 12, y: 5)
+                        .position(drag.point)
                         .allowsHitTesting(false)
                 }
             }
-            .coordinateSpace(name: "arrange")
+            .coordinateSpace(name: Self.space)
+            .onPreferenceChange(ArrangeMapFrameKey.self) { mapFrame = $0 }
             HStack(spacing: 8) {
-                Text(model.applied ? "Drag windows between zones — they move as you drop." : "Drag to rearrange, then Arrange.")
-                    .font(.system(size: 10.5)).foregroundStyle(.secondary)
-                Spacer()
+                ArrangeStatusText(model: model, large: true)
                 GlassButton(title: "Auto-fill", symbol: "wand.and.stars") { model.autofill() }
+                    .help("Fill the empty zones with your front-most windows")
                 GlassButton(title: "Arrange", symbol: "rectangle.split.2x2.fill", prominent: true) { model.apply() }
+                    .accessibilityIdentifier("panel.arrange.apply")
             }
         }
         .onAppear { model.load(thumbnails: true) }
     }
 
-    // The screen in miniature with the assigned windows.
-    private var map: some View {
-        ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(LinearGradient(colors: [Plumage.wingLight.opacity(0.10), Plumage.tail.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Color.primary.opacity(0.12), lineWidth: 0.5))
-            ForEach(Array(model.layout.tiles.enumerated()), id: \.offset) { index, tile in
-                let rect = LayoutThumb.zone(tile, in: mapSize, inset: 8, gap: 8)
-                zoneView(index: index)
-                    .frame(width: rect.width, height: rect.height)
-                    .accessibilityElement(children: .contain)
-                    .accessibilityIdentifier("arrange-zone-\(index)")
-                    .offset(x: rect.minX, y: rect.minY)
-            }
-        }
-        .frame(width: mapSize.width, height: mapSize.height)
+    private func dragChanged(_ value: ArrangeDrag) {
+        drag = value
+        let target = ArrangeMap.zone(at: value.point, mapFrame: mapFrame, layout: model.layout, large: true)
+        if target != dropTarget { withAnimation(.easeOut(duration: 0.12)) { dropTarget = target } }
     }
 
-    @ViewBuilder
-    private func zoneView(index: Int) -> some View {
-        let window = model.window(index < model.slots.count ? model.slots[index] : nil)
-        let highlighted = dropTarget == index
-        ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(highlighted ? AnyShapeStyle(Plumage.sheen(0.3)) : AnyShapeStyle(Color.primary.opacity(0.05)))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(highlighted ? Plumage.wingLight : Color.primary.opacity(0.18),
-                                  style: StrokeStyle(lineWidth: highlighted ? 1.5 : 0.8, dash: window == nil ? [5, 4] : [])))
-            if let window {
-                WindowCard(window: window, thumbnail: model.thumbnails[window.id]) {
-                    model.close(window)
-                }
-                .opacity(dragging?.id == window.id ? 0.35 : 1)
-                .gesture(drag(for: window.id))
-                .onTapGesture { WindowTiler.shared.raise(window) }
-            } else {
-                Label("Drop a window", systemImage: "plus.rectangle.on.rectangle")
-                    .font(.system(size: 10.5, weight: .medium)).foregroundStyle(.secondary)
-            }
-        }
-        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: model.slots)
-        .animation(.easeOut(duration: 0.12), value: highlighted)
-    }
-
-    // Windows not placed in the layout.
-    private var strip: some View {
-        let rest = model.unplaced
-        return VStack(alignment: .leading, spacing: 5) {
-            Text(rest.isEmpty ? "All windows are placed" : "Other windows — drag into a zone")
-                .font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(rest) { window in
-                        HStack(spacing: 6) {
-                            AppIconView(bundleID: window.bundleID, size: 16)
-                            Text(window.appName).font(.system(size: 10.5, weight: .medium)).lineLimit(1)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(Capsule().fill(.thinMaterial))
-                        .overlay(Capsule().stroke(Color.primary.opacity(0.12), lineWidth: 0.5))
-                        .opacity(dragging?.id == window.id ? 0.35 : 1)
-                        .gesture(drag(for: window.id))
-                        .help(window.title)
-                    }
-                }
-                .padding(.vertical, 1)
-            }
-            .frame(height: 30)
-        }
-        .frame(height: 46, alignment: .top)
-    }
-
-    private func drag(for id: String) -> some Gesture {
-        DragGesture(minimumDistance: 3, coordinateSpace: .named("arrange"))
-            .onChanged { value in
-                dragging = (id, value.location)
-                let target = zoneIndex(at: value.location)
-                if target != dropTarget { withAnimation(.easeOut(duration: 0.12)) { dropTarget = target } }
-            }
-            .onEnded { value in
-                if let target = zoneIndex(at: value.location) {
-                    model.drop(id, into: target)
-                } else if value.location.y > mapSize.height {
-                    model.drop(id, into: nil) // dropped on the strip: take it out of the layout
-                }
-                dragging = nil
-                dropTarget = nil
-            }
-    }
-
-    private func zoneIndex(at point: CGPoint) -> Int? {
-        for (index, tile) in model.layout.tiles.enumerated() where LayoutThumb.zone(tile, in: mapSize, inset: 8, gap: 8).contains(point) {
-            return index
-        }
-        return nil
-    }
-}
-
-/// A window inside a zone: live picture, app icon + name, ✕ to quit the app.
-private struct WindowCard: View {
-    let window: WindowInfo
-    let thumbnail: NSImage?
-    var compact = false
-    var close: (() -> Void)?
-    @State private var hovering = false
-
-    var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            if let thumbnail, !compact {
-                Image(nsImage: thumbnail).resizable().aspectRatio(contentMode: .fill)
-                    .clipped()
-                    .overlay(LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .center, endPoint: .bottom))
-            } else {
-                Rectangle().fill(.thinMaterial)
-            }
-            HStack(spacing: 6) {
-                AppIconView(bundleID: window.bundleID, size: compact ? 18 : 20)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(window.appName).font(.system(size: 10.5, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
-                    if !window.title.isEmpty {
-                        Text(window.title).font(.system(size: 9)).foregroundStyle(.white.opacity(0.75)).lineLimit(1)
-                    }
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(6)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(Color.white.opacity(0.25), lineWidth: 0.5))
-        .overlay(alignment: .topTrailing) {
-            if let close, hovering {
-                Button(action: close) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 18, height: 18)
-                        .background(Circle().fill(Color.red.opacity(0.85)))
-                }
-                .buttonStyle(.plain)
-                .padding(5)
-                .help("Quit \(window.appName)")
-                .transition(.scale.combined(with: .opacity))
-            }
-        }
-        .padding(3)
-        .contentShape(Rectangle())
-        .onHover { inside in withAnimation(.easeOut(duration: 0.15)) { hovering = inside } }
+    private func dropped(_ value: ArrangeDrag) {
+        ArrangeDropHandler.drop(value, on: model, mapFrame: mapFrame, large: true)
+        drag = nil
+        dropTarget = nil
     }
 }
 
