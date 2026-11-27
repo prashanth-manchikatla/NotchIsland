@@ -40,7 +40,12 @@ struct CinemaCard: View {
         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white.opacity(0.07)))
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.18), value: flash)
-        .onDisappear { flashTask?.cancel() }
+        // While you look at the card, the page is read more often (fresh title and time).
+        .onAppear { CinemaNowPlaying.shared.setViewing(true) }
+        .onDisappear {
+            flashTask?.cancel()
+            CinemaNowPlaying.shared.setViewing(false)
+        }
     }
 
     // MARK: Rows
@@ -62,13 +67,15 @@ struct CinemaCard: View {
     }
 
     private var modePicker: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 2) {
             ForEach(CinemaPictureMode.allCases) { option in
                 Button {
                     picture.setMode(option)
                 } label: {
                     Text(option.rawValue)
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                         .foregroundStyle(option == mode ? Color.black : Color.white.opacity(0.85))
                         .frame(maxWidth: .infinity)
                         .frame(height: 20)
@@ -160,9 +167,9 @@ struct CinemaCard: View {
     }
 
     private var theaterStatus: String {
-        if case .applied(let text) = picture.status { return "Theater · \(text)" }
+        if case .applied(let text) = picture.status { return text }
         if case .failed(let message) = picture.status { return message }
-        return "Theater · \(mode.rawValue) · whole screen"
+        return "\(mode.rawValue) · whole screen"
     }
 
     /// What the picture mode can do where the video is playing now.
@@ -188,6 +195,18 @@ struct CinemaCard: View {
                 }
             default:
                 note(CinemaPicture.statusText(picture.status, mode: mode, browser: browser.name))
+            }
+        case .webApp, .app:
+            switch picture.status {
+            case .opening:
+                HStack(spacing: 5) {
+                    ProgressView().controlSize(.mini)
+                    note("Opening the Theater…")
+                }
+            case .failed(let message):
+                note(message)
+            default:
+                note("Fill, Smart and Stretch play in the Theater")
             }
         default:
             note("Whole screen, beside the notch too")
@@ -240,8 +259,8 @@ struct CinemaCard: View {
 
     private var canResize: Bool {
         switch picture.support {
-        case .script, .theater: return true
-        default: return false
+        case .script, .theater, .webApp, .app: return true // web apps & apps: via the Theater
+        case .none: return false
         }
     }
 
@@ -336,7 +355,8 @@ extension CinemaPicture {
         switch status {
         case .idle: return mode == .fit ? "Fill or Stretch to use the whole screen" : "\(mode.rawValue) turns on in full screen"
         case .working: return "Applying \(mode.rawValue)…"
-        case .applied(let text): return "\(text) on"
+        case .opening: return "Opening the Theater…"
+        case .applied(let text): return text
         case .notFullScreen: return "\(mode.rawValue) turns on in full screen"
         case .noVideo: return "No video found in \(browser)"
         case .needsJavaScript(let b): return "\(b.name): turn on Allow JavaScript from Apple Events"
@@ -392,7 +412,7 @@ struct CinemaSettingsView: View {
             } header: {
                 Text("Theater — the whole 1.54:1 screen")
             } footer: {
-                Text("macOS keeps every full-screen app (Safari, the Netflix web app, Prime Video) below the notch, in a 16:10 area. The Theater is Hoverbird's own window over the whole display, beside the notch too, like VLC's full screen: menu bar and Dock hidden, the service's website inside (sign in once). From the island, “Full 1.54:1” moves what's playing into it. Esc or ⌘W leaves; ⌘[ goes back.")
+                Text("macOS keeps every full-screen app (Safari, the Netflix web app, Prime Video) below the notch, in a 16:10 area. The Theater is Hoverbird's own window over the whole display, beside the notch too, like VLC's full screen: menu bar and Dock hidden, the service's website inside. Sign in once — it stays signed in, and it never asks for your Mac's password. From the island, “Full 1.54:1” (or Fill, Smart, Stretch while the Netflix app plays) moves what's playing into it. A changes the picture; Esc or ⌘W leaves; ⌘[ goes back.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
@@ -414,9 +434,9 @@ struct CinemaSettingsView: View {
                     Button("Apply now") { picture.apply() }
                 }
             } header: {
-                Text("Picture — Fit, Fill, Stretch")
+                Text("Picture — Fit, Fill, Smart, Stretch")
             } footer: {
-                Text("In the Theater the screen is 1.54:1. A 16:9 show: Fit keeps the whole picture (thin bars above and below, the notch sits in the top bar); Fill zooms ×1.16 and trims about 7 % from each side, the notch covering the top centre of the picture; Stretch fills without trimming and makes it about 16 % taller. Wide movies (2.39:1): Fill zooms ×1.55 — try Fit with Zoom 120–130 % instead.\n\nFill and Stretch also work in a Safari or Brave/Chrome tab in normal full screen (16:10, below the notch) after you turn on “Allow JavaScript from Apple Events” once (Safari › Settings › Developer; Brave/Chrome › View › Developer).")
+                Text("In the Theater the screen is 1.54:1, so a 16:9 show can only cover it by trimming or stretching. Fit keeps the whole picture (thin bars above and below, the notch sits in the top bar). Fill zooms ×1.16 and trims about 7 % from each side. Smart (the default) splits the difference: about 4 % trimmed from each side and 8 % taller. Stretch trims nothing and makes it 16 % taller. With Fill, Smart and Stretch the notch covers a little of the top centre, as in VLC. Wide movies (2.39:1): try Fit with Zoom 120–130 %.\n\nThe picture modes also work in a Safari or Brave/Chrome tab in normal full screen (16:10, below the notch) after you turn on “Allow JavaScript from Apple Events” once (Safari › Settings › Developer; Brave/Chrome › View › Developer). The Netflix web app and the Prime Video app can't be resized by other apps: choosing a mode there moves the video into the Theater.")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -428,7 +448,7 @@ struct CinemaSettingsView: View {
         switch picture.support {
         case .script(let browser): return CinemaPicture.statusText(picture.status, mode: mode, browser: browser.name)
         case .theater: return CinemaPicture.statusText(picture.status, mode: mode, browser: "the Theater")
-        case .webApp(let name), .app(let name): return "\(name) can't be resized — use the Theater"
+        case .webApp(let name), .app(let name): return "\(name) can't be resized from outside — modes open the Theater"
         case .none: return "Nothing is playing"
         }
     }

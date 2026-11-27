@@ -92,37 +92,43 @@ struct AlbumArtView: View {
                 
 
     private var albumArtImage: some View {
-        ZStack {
-            Image(nsImage: musicManager.albumArt)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-            // Hoverbird: streaming services (DRM) show their info, never a black mirror.
-            if let platform = liveVideo.ottPlatform, vm.notchState == .open {
-                OTTArtworkOverlay(platform: platform, showTile: musicManager.usingAppIconForArtwork)
-                    .transition(.opacity)
-            } else if liveVideoEnabled && vm.notchState == .open {
-            // Hoverbird: the playing video itself, live, in the artwork space.
-                LiveVideoView(fill: liveVideoFrame == .fill)
-                    .opacity(liveVideo.hasVideo ? 1 : 0)
-                    .allowsHitTesting(false)
-                if let hint = liveVideo.hint, !liveVideo.hasVideo {
-                    VStack {
-                        Spacer(minLength: 0)
-                        Text(hint)
-                            .font(.system(size: 8.5, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(4)
-                            .padding(4)
-                            .frame(maxWidth: .infinity)
-                            .background(.black.opacity(0.72))
+        // Hoverbird: the frame has a fixed shape (square, or the live video's) and the artwork
+        // fills it. Before, the picture's own shape sized the frame: a portrait poster (Prime
+        // Video sends 450 × 600) made the player taller than the island, cutting off its top.
+        Color.clear
+            .aspectRatio(artAspect, contentMode: .fit)
+            .overlay {
+                ZStack {
+                    Image(nsImage: musicManager.albumArt)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                    // Hoverbird: streaming services (DRM) show their info, never a black mirror.
+                    if let platform = liveVideo.ottPlatform, vm.notchState == .open {
+                        OTTArtworkOverlay(platform: platform, showTile: musicManager.usingAppIconForArtwork)
+                            .transition(.opacity)
+                    } else if liveVideoEnabled && vm.notchState == .open {
+                        // Hoverbird: the playing video itself, live, in the artwork space.
+                        LiveVideoView(fill: liveVideoFrame == .fill)
+                            .opacity(liveVideo.hasVideo ? 1 : 0)
+                            .allowsHitTesting(false)
+                        if let hint = liveVideo.hint, !liveVideo.hasVideo {
+                            VStack {
+                                Spacer(minLength: 0)
+                                Text(hint)
+                                    .font(.system(size: 8.5, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(4)
+                                    .padding(4)
+                                    .frame(maxWidth: .infinity)
+                                    .background(.black.opacity(0.72))
+                            }
+                            .transition(.opacity)
+                            .allowsHitTesting(false)
+                        }
                     }
-                    .transition(.opacity)
-                    .allowsHitTesting(false)
                 }
             }
-        }
-            .aspectRatio(artAspect, contentMode: .fit)
             .animation(.spring(response: 0.4, dampingFraction: 0.85), value: artAspect)
             .matchedGeometryEffect(id: "albumArt", in: albumArtNamespace)
             .clipped()

@@ -14,6 +14,8 @@ and each one is either essential to what you asked for or switched off until you
 | Notifications | Notification banners, through Accessibility | In memory |
 | Copy Text / Scan QR | The area of the screen you select, read with Apple's on-device Vision | The clipboard |
 | Focus | — | Daily focus minutes in preferences |
+| Cinema · what's playing | Netflix's player controls (title, seek bar) through Accessibility, only while Netflix plays | In memory |
+| Cinema · Theater | The streaming site you open in it | Its own website data on this Mac, like a browser's: your sign-ins (kept until you use **Settings › Cinema › Sign out of all**; sign-ins that sites would drop at quit are kept for 30 days), the Netflix profile you use there, and an encryption key for the site's stored data (`Application Support/Hoverbird/Theater/webcrypto.key`, owner-only — never the Keychain) |
 | Camera & screen capture | Only while you use them | Your capture folder |
 
 **Privacy mode** for screen sharing: *Settings › AI Usage › Hide prompts, commands and project names*.
@@ -24,7 +26,8 @@ Hoverbird can also hide itself from screenshots and screen sharing (*Settings �
 | Feature | Talks to | When |
 |---|---|---|
 | Weather | Open-Meteo (`api.open-meteo.com`), and Apple's geocoder for your city's name | When the Calendar section shows weather |
-| Lyrics | LRCLIB (`lrclib.net`) | When lyrics are shown for a song |
+| Lyrics | LRCLIB (`lrclib.net`) | When lyrics are shown for a song — never for movies and shows |
+| Cinema · Netflix picture | The title's public page on `www.netflix.com` (only its first few KB) and its image on Netflix's image servers (`*.nflxso.net`) — no cookies, nothing about you | Once per title, while it plays on Netflix |
 | AI Usage · live limits *(opt-in)* | `api.anthropic.com` (Claude), `chatgpt.com` (Codex), `cli-chat-proxy.grok.com` (Grok) | Every few minutes while it matters; only for providers you switched on |
 | AI Usage · API accounts *(opt-in)* | `openrouter.ai`, `api.openai.com`, `api.deepseek.com` | Every 10 minutes, only for keys you added |
 

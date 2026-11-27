@@ -11,7 +11,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **Cinema mode** for Netflix, Prime Video and other streaming services: quiet island and held
   notifications during full-screen video ("while you watched" summary), ±10 s / Skip intro / mute /
   full-screen controls with time left, the full-screen **Theater** that uses the whole 1.54:1 screen
-  beside the notch, and VLC-style Fit / Fill / Stretch with zoom.
+  beside the notch, and VLC-style Fit / Fill / **Smart** / Stretch with zoom (Smart, the default, covers
+  the screen with the smallest change; in the Theater, A changes the picture and a note says what it trims).
+- Cinema shows the movie or episode's real title, key art and time left for Netflix (in its web app, a
+  browser or the Theater) — Netflix itself tells macOS only "Netflix" and no time.
 
 ### Changed
 
@@ -35,6 +38,28 @@ into an iPhone-style Dynamic Island for the MacBook notch.
 ### Added
 
 - **The island:** black glass with adjustable tint, optional macOS 26 Liquid Glass, glass rim and
+- Cinema: choosing Fit / Fill / Stretch while watching in the Netflix web app did nothing — the web app
+  can't be resized by other apps, so the choice now moves the video into the Theater, where it applies.
+- Cinema: after an update, the Theater asked for the Mac's login password again and again (WebKit kept an
+  encryption key in the Keychain, tied to each build). The Theater now keeps its own key and never uses
+  the Keychain.
+- Lyrics are no longer looked up (by title, on lrclib.net) for movies and shows.
+- AI Usage never repeats a Keychain read you denied or that timed out; only Refresh asks again.
+- The island's top was cut off while a streaming service played: a portrait poster (Prime Video's) made
+  the artwork, and with it the player, taller than the island. The artwork now keeps its usual size.
+- Cinema: Fill, Smart and Stretch zoomed Prime Video's picture inside its 16:9 frame instead of filling the
+  screen. Players that clip their video to a frame are now handled (and restored for Fit).
+- Cinema: "Full 1.54:1" from the Prime Video app opened Prime Video's home page; it now opens the same title
+  and resumes at the same moment.
+- Cinema: the Theater could not be left — Esc counted Prime Video's sliders as typing, and when macOS gave
+  the keyboard to another app the Theater still covered the screen. Esc now always leaves (from anywhere),
+  and a Leave Theater button appears in the top-left corner.
+- Cinema: the Theater asked to sign in again after every restart (Amazon / Prime Video India signs in with
+  cookies that end at quit) and showed Netflix's "Who's watching?" — sign-ins are now kept and your Netflix
+  profile is picked for you.
+- Cinema: moving Netflix into the Theater started paused, at Netflix's own bookmark; it now continues at
+  the same second, playing. The Theater no longer opens in Fit (its picture is the same as normal full
+  screen), and picture modes no longer resize the trailer in a page's header.
   iPhone-style springs; proximity growth, instant open at the top edge, two-finger swipes and pinning.
 - **Live Activities:** one primary activity around the camera and a detached bubble, with a single
   priority order for recordings, timers, banners, meetings, orders, media and more.

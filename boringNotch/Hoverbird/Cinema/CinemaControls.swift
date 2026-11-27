@@ -62,7 +62,10 @@ enum CinemaControls {
     @discardableResult
     static func seek(forward: Bool) -> Bool {
         guard allow("seek"), canControl, let target else { return false }
-        return send(forward ? .right : .left, to: target.pid, arrow: true)
+        let sent = send(forward ? .right : .left, to: target.pid, arrow: true)
+        // The island's time follows right away (Netflix's arrow keys move 10 s).
+        if sent { CinemaNowPlaying.shared.seeked(by: forward ? 10 : -10) }
+        return sent
     }
 
     @discardableResult

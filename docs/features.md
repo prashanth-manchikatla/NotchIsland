@@ -60,11 +60,23 @@ For Netflix, Prime Video and other streaming services (Settings › Cinema).
   buttons, so they work while the app is in the background.
 - **Theater, the whole screen (1.54:1):** macOS keeps every full-screen app below the notch, in a 16:10
   area. "Full 1.54:1" moves what's playing into Hoverbird's own window over the whole display, beside
-  the notch too, the way VLC's full screen works. Netflix and Prime Video play there with FairPlay. You
-  sign in once (Settings › Cinema can sign you out). Esc or ⌘W leaves.
-- **Fit / Fill / Stretch + Zoom:** like VLC. In the Theater a 16:9 show with Fill is zoomed ×1.16 (about
-  7 % trimmed from each side); Stretch makes it about 16 % taller instead. Fill and Stretch also work in a
-  Safari or Chrome-family tab in normal full screen after you turn on "Allow JavaScript from Apple Events".
+  the notch too, the way VLC's full screen works: the same title, at the same second, still playing.
+  Netflix and Prime Video play there with FairPlay. You sign in once per service and stay signed in, even
+  where a site would forget you at quit (Settings › Cinema can sign you out); Netflix's "Who's watching?"
+  is answered with your profile; the Theater never asks for your Mac's password. Leave with Esc (it works
+  even when another app has the keyboard), the Leave Theater button in the top-left corner, or the
+  island; A changes the picture, and a note under the notch says what it trims.
+- **Fit / Fill / Smart / Stretch + Zoom:** like VLC. On the Theater's 1.54:1 screen a 16:9 show: Fit keeps
+  the whole picture (thin bars); Fill zooms ×1.16 (about 7 % trimmed per side); **Smart** (the default)
+  splits the difference — about 4 % trimmed per side and 8 % taller; Stretch trims nothing and makes it
+  16 % taller. The Netflix web app and the Prime Video app can't be resized by other apps, so choosing a mode
+  there moves the video into the Theater — from the Prime Video app straight to the same title, at the same
+  moment. Players that keep their video in a 16:9 frame (Prime Video) are handled too. The modes also work in
+  a Safari or Chrome-family tab in normal full screen after you turn on "Allow JavaScript from Apple Events".
+- **What's playing:** the movie or episode's real title, its key art and the time. Netflix tells macOS only
+  "Netflix", its icon and no time, so Hoverbird reads the player itself: its controls through Accessibility
+  in the Netflix web app or a browser (whenever they're on screen — the time keeps counting from there),
+  the page directly in the Theater, and the title's public page on netflix.com for the picture.
 
 ## AI Usage
 

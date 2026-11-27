@@ -397,6 +397,7 @@ final class NowPlayingController: ObservableObject, MediaControllerProtocol {
         newPlaybackState.artist = payload.artist ?? (diff ? self.playbackState.artist : "")
         newPlaybackState.album = payload.album ?? (diff ? self.playbackState.album : "")
         newPlaybackState.duration = payload.duration ?? (diff ? self.playbackState.duration : 0)
+        newPlaybackState.contentID = payload.contentItemIdentifier ?? (diff ? self.playbackState.contentID : nil)
         
         if let elapsedTime = payload.elapsedTime {
             newPlaybackState.currentTime = elapsedTime
@@ -506,6 +507,8 @@ struct NowPlayingPayload: Codable {
     let parentApplicationBundleIdentifier: String?
     let bundleIdentifier: String?
     let volume: Double?
+    /// Hoverbird: the app's id for what's playing (Prime Video: "amzn1.dv.gti.…").
+    let contentItemIdentifier: String?
 }
 
 actor JSONLinesPipeHandler {

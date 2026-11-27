@@ -52,6 +52,8 @@ class MusicManager: ObservableObject {
     @Published var animations: BoringAnimations = .init()
     @Published var avgColor: NSColor = .white
     @Published var bundleIdentifier: String? = nil
+    /// Hoverbird: the app's id for what's playing (Prime Video: "amzn1.dv.gti.…").
+    private(set) var contentID: String?
     @Published var songDuration: TimeInterval = 0
     @Published var elapsedTime: TimeInterval = 0
     @Published var timestampDate: Date = .init()
@@ -193,8 +195,23 @@ class MusicManager: ObservableObject {
     }
 
     // MARK: - Update Methods
+
+    /// Hoverbird: the last state from Now Playing, before Cinema filled in what the page shows.
+    private var lastRawState: PlaybackState?
+
+    /// Hoverbird Cinema learned more about what's playing (title, time, picture): show it now.
     @MainActor
-    private func updateFromPlaybackState(_ state: PlaybackState) {
+    func reapplyLastState() {
+        guard let lastRawState else { return }
+        updateFromPlaybackState(lastRawState)
+    }
+
+    @MainActor
+    private func updateFromPlaybackState(_ raw: PlaybackState) {
+        lastRawState = raw
+        // Hoverbird Cinema: Netflix & co. tell Now Playing only their name — fill in the
+        // title, episode, picture and time their page shows.
+        let state = CinemaNowPlaying.shared.enrich(raw)
         // Check for playback state changes (playing/paused)
         if state.isPlaying != self.isPlaying {
             NSLog("Playback state changed: \(state.isPlaying ? "Playing" : "Paused")")
@@ -246,8 +263,14 @@ class MusicManager: ObservableObject {
                 self.updateSneakPeek()
             }
 
-            // Fetch lyrics on content change
-            self.fetchLyricsIfAvailable(bundleIdentifier: state.bundleIdentifier, title: state.title, artist: state.artist)
+            // Fetch lyrics on content change (Hoverbird: never for movies and shows — the
+            // lookup sends the title to a lyrics website)
+            if !CinemaNowPlaying.shared.suppressesLyrics(for: state.bundleIdentifier) {
+                self.fetchLyricsIfAvailable(bundleIdentifier: state.bundleIdentifier, title: state.title, artist: state.artist)
+            } else if !self.currentLyrics.isEmpty || !self.syncedLyrics.isEmpty {
+                self.currentLyrics = ""
+                self.syncedLyrics = []
+            }
         }
 
         let timeChanged = state.currentTime != self.elapsedTime
@@ -284,6 +307,8 @@ class MusicManager: ObservableObject {
         if shuffleChanged {
             self.isShuffled = state.isShuffled
         }
+
+        contentID = state.contentID
 
         if state.bundleIdentifier != self.bundleIdentifier {
             self.bundleIdentifier = state.bundleIdentifier

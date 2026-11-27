@@ -43,6 +43,7 @@ enum HoverbirdBootstrap {
         _ = FocusManager.shared // eye-break reminders, if on
         BatteryAlerts.shared.start()
         CinemaMode.shared.start()     // full-screen video: quiet island, held banners, picture mode
+        CinemaNowPlaying.shared.start() // streaming pages' title, episode, picture and time
         DownloadsWatcher.shared.start()
         DrivesMonitor.shared.start()
 

@@ -10,6 +10,10 @@
 //    Developer ID, "Always Allow" only covers that exact build.)
 //  Every call can block (a prompt, or the tool): call off the main thread.
 //
+//  Rule: a read that asks for your password is tried at most once. If it doesn't succeed —
+//  Deny, Cancel, a timeout — Hoverbird never repeats it in the background (macOS would ask
+//  again every few minutes); only something you do (Refresh, saving a key) tries once more.
+//
 
 import Foundation
 import Security
@@ -24,8 +28,34 @@ enum AIKeychain {
         case failed(OSStatus)
     }
 
+    // MARK: Never ask twice
+
+    private static let guardLock = NSLock()
+    private static var refused: Set<String> = []
+
+    /// You asked (Refresh, a key saved): reads that were refused may ask once more.
+    static func allowRetry() {
+        guardLock.withLock { refused.removeAll() }
+    }
+
+    private static func guarded(_ id: String, _ read: () -> ReadResult) -> ReadResult {
+        if guardLock.withLock({ refused.contains(id) }) { return .denied }
+        let result = read()
+        guardLock.withLock {
+            switch result {
+            case .found, .notFound: refused.remove(id)
+            case .denied, .failed: refused.insert(id)
+            }
+        }
+        return result
+    }
+
     /// Reads a generic password by service name (another app's item → macOS asks first).
     static func read(service: String, account: String? = nil) -> ReadResult {
+        guarded("item:\(service)|\(account ?? "")") { readNow(service: service, account: account) }
+    }
+
+    private static func readNow(service: String, account: String?) -> ReadResult {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -46,6 +76,10 @@ enum AIKeychain {
     /// Reads another tool's item through `/usr/bin/security`, the way that tool reads it.
     /// Prints nothing and passes no secret on the command line; gives up after 30 s.
     static func readWithSecurityTool(service: String) -> ReadResult {
+        guarded("tool:\(service)") { readWithSecurityToolNow(service: service) }
+    }
+
+    private static func readWithSecurityToolNow(service: String) -> ReadResult {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
         process.arguments = ["find-generic-password", "-s", service, "-w"]

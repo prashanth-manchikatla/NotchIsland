@@ -80,11 +80,13 @@ final class AIUsageStore: ObservableObject {
 
     func refresh() {
         AIUsageEngine.shared.refreshNow()
+        AIKeychain.allowRetry() // you asked: a refused Keychain read may ask once more
         Task { await poll(force: true) }
     }
 
     /// API keys changed in Settings.
     func accountsChanged() {
+        AIKeychain.allowRetry()
         lastAccountsFetch = .distantPast
         Task { await poll(force: false) }
     }

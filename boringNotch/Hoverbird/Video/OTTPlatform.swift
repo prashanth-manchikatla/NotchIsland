@@ -146,6 +146,48 @@ enum OTTDetector {
         browserPrefixes.contains { bundleID.hasPrefix($0) }
     }
 
+    /// Just the service's own name ("Netflix", "Prime Video") — what pages put in Now Playing
+    /// instead of the show's.
+    static func isServiceName(_ raw: String) -> Bool {
+        let title = raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return false }
+        return rules.contains { $0.name.lowercased() == title || $0.marks.contains(title) || $0.domains.contains(title) }
+    }
+
+    /// "Prime Video: Jumanji" / "Jumanji | Prime Video" / "Watch Jumanji | Netflix" → "Jumanji".
+    static func withoutServiceName(_ raw: String) -> String {
+        let title = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lower = title.lowercased()
+        for rule in rules {
+            for mark in [rule.name.lowercased()] + rule.marks where mark.count >= 3 {
+                // Everyday words ("Max", "aha") only count at the end: "Max: The Movie" is a title.
+                for separator in [": ", " - ", " – ", " — ", " | "] where !suffixOnlyMarks.contains(mark) && lower.hasPrefix(mark + separator) {
+                    let rest = String(title.dropFirst(mark.count + separator.count)).trimmingCharacters(in: .whitespaces)
+                    if !rest.isEmpty { return rest }
+                }
+                for separator in [" | ", " - ", " – ", " — ", " · "] where lower.hasSuffix(separator + mark) {
+                    var rest = String(title.dropLast(mark.count + separator.count)).trimmingCharacters(in: .whitespaces)
+                    if rest.lowercased().hasPrefix("watch ") { rest = String(rest.dropFirst(6)) }
+                    if !rest.isEmpty { return rest }
+                }
+            }
+        }
+        return title
+    }
+
+    /// Every service's sites ("netflix.com", "primevideo.com", "hotstar.com"…) plus the sign-in
+    /// sites some of them send you through — whose sign-ins the Theater keeps.
+    static let serviceDomains: [String] = {
+        var out: [String] = []
+        for rule in rules where !rule.education {
+            for domain in rule.domains {
+                let host = String(domain.split(separator: "/").first ?? Substring(domain))
+                if !out.contains(host) { out.append(host) }
+            }
+        }
+        return out + ["disney.com", "bamgrid.com", "jio.com", "max.com", "hbomax.com"]
+    }()
+
     /// The service's web addresses ("netflix.com"), used to find its browser tab.
     static func domains(forPlatformNamed name: String?) -> [String] {
         guard let name else { return [] }

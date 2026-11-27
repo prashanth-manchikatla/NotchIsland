@@ -28,6 +28,8 @@ struct PlaybackState {
     var artwork: Data?
     var volume: Double = 0.5
     var isFavorite: Bool = false
+    /// Hoverbird: the app's id for what's playing (Prime Video's title id), when it gives one.
+    var contentID: String?
 }
 
 extension PlaybackState: Equatable {
@@ -43,5 +45,6 @@ extension PlaybackState: Equatable {
             && lhs.repeatMode == rhs.repeatMode
             && lhs.artwork == rhs.artwork
             && lhs.isFavorite == rhs.isFavorite
+            && lhs.contentID == rhs.contentID
     }
 }

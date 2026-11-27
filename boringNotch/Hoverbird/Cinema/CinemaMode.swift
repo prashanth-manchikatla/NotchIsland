@@ -19,15 +19,23 @@ import SwiftUI
 enum CinemaPictureMode: String, CaseIterable, Identifiable, Defaults.Serializable {
     case fit = "Fit"
     case fill = "Fill"
+    case smart = "Smart"
     case stretch = "Stretch"
     var id: String { rawValue }
 
     var help: String {
         switch self {
         case .fit: return "The whole picture, as it was made (black bars where the shape differs)"
-        case .fill: return "Zoom until the screen is covered — trims a little from the sides"
-        case .stretch: return "Cover the screen without trimming — the picture gets a little taller"
+        case .fill: return "Zoom until the screen is covered — trims the sides"
+        case .smart: return "Cover the screen with the smallest change — trims a little and makes the picture a little taller"
+        case .stretch: return "Cover the screen without trimming — the picture gets taller"
         }
+    }
+
+    /// Fit → Fill → Smart → Stretch → Fit (the Theater's A key).
+    var next: CinemaPictureMode {
+        let all = Self.allCases
+        return all[(all.firstIndex(of: self)! + 1) % all.count]
     }
 }
 
@@ -39,8 +47,8 @@ extension Defaults.Keys {
     static let cinemaSummary = Key<Bool>("cinemaSummary", default: true)
     /// Opening the island during a full-screen video lands on the player.
     static let cinemaOpenToPlayer = Key<Bool>("cinemaOpenToPlayer", default: true)
-    /// Fill by default: full screen should use the whole screen (you asked for no black bars).
-    static let cinemaPictureMode = Key<CinemaPictureMode>("cinemaPictureMode", default: .fill)
+    /// Smart by default: the whole screen with the smallest change to the picture (your choice).
+    static let cinemaPictureMode = Key<CinemaPictureMode>("cinemaPictureMode", default: .smart)
     /// Extra zoom on top of the picture mode (1.0 … 1.5), for movies with black bars inside the video.
     static let cinemaZoom = Key<Double>("cinemaZoom", default: 1.0)
 }
