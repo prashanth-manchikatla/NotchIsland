@@ -880,6 +880,7 @@ func lighterColor(from nsColor: NSColor, amount: CGFloat = 0.14) -> Color {
 
 struct About: View {
     @State private var showBuildNumber: Bool = false
+    @State private var legalDocument: LegalDocument?
     @Environment(\.openWindow) var openWindow
     var body: some View {
         VStack {
@@ -910,6 +911,23 @@ struct About: View {
                     Text("Version info")
                 }
 
+                // GPL-3.0 "Appropriate Legal Notices": copyright, no warranty, how to read the license.
+                Section {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Copyright © 2026 prashanth-manchikatla")
+                        Text("Based on boring.notch, copyright © TheBoredTeam and the boring.notch contributors")
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Hoverbird is free software: you can share and change it under the GNU General Public License v3.0. It comes with ABSOLUTELY NO WARRANTY.")
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        Button("View License") { legalDocument = .license }
+                        Button("Third-Party Licenses") { legalDocument = .thirdParty }
+                    }
+                } header: {
+                    Text("License")
+                }
+
                 HStack(spacing: 30) {
                     Spacer(minLength: 0)
                     Button {
@@ -932,7 +950,7 @@ struct About: View {
             }
             VStack(spacing: 0) {
                 Divider()
-                Text("Hoverbird · personal build based on boring.notch by TheBoredTeam (GPL-3.0)")
+                Text("Hoverbird · based on boring.notch by TheBoredTeam · GPL-3.0")
                     .foregroundStyle(.secondary)
                     .padding(.top, 5)
                     .padding(.bottom, 7)
@@ -941,6 +959,9 @@ struct About: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
+        .sheet(item: $legalDocument) { document in
+            LegalDocumentSheet(document: document)
+        }
         .toolbar {
             //            Button("Welcome window") {
             //                openWindow(id: "onboarding")
@@ -948,6 +969,68 @@ struct About: View {
             //            .controlSize(.extraLarge)
         }
         .navigationTitle("About")
+    }
+}
+
+/// License texts bundled in Contents/Resources (Scripts/build.sh copies them there).
+enum LegalDocument: String, Identifiable {
+    case license, thirdParty
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .license: return "GNU General Public License v3.0"
+        case .thirdParty: return "Notices and Third-Party Licenses"
+        }
+    }
+
+    /// Bundled files, shown one after the other.
+    private var fileNames: [String] {
+        switch self {
+        case .license: return ["LICENSE"]
+        case .thirdParty: return ["NOTICE", "THIRD_PARTY_LICENSES"]
+        }
+    }
+
+    var text: String {
+        let parts = fileNames.compactMap { name -> String? in
+            guard let url = Bundle.main.url(forResource: name, withExtension: nil) else { return nil }
+            return try? String(contentsOf: url, encoding: .utf8)
+        }
+        guard !parts.isEmpty else {
+            return "This build doesn't include the license files. They're in the source code at https://github.com/prashanth-manchikatla/Hoverbird"
+        }
+        return parts.joined(separator: "\n\n")
+    }
+}
+
+struct LegalDocumentSheet: View {
+    let document: LegalDocument
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(document.title)
+                    .font(.headline)
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(12)
+            Divider()
+            ScrollView {
+                Text(text)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+            }
+        }
+        .frame(width: 600, height: 520)
+        .task { text = document.text }
     }
 }
 

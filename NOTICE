@@ -1,19 +1,22 @@
 Hoverbird
 The iPhone's Dynamic Island, reimagined for your MacBook's notch.
+Copyright (C) 2026 prashanth-manchikatla
 
 Hoverbird is free software, licensed under the GNU General Public License v3.0
-(see LICENSE).
+(see LICENSE). It comes with ABSOLUTELY NO WARRANTY.
 
-Hoverbird is a derivative work of boring.notch
+Hoverbird is a modified version (derivative work) of boring.notch
   https://github.com/TheBoredTeam/boring.notch
   Copyright (C) TheBoredTeam and the boring.notch contributors
   Licensed under the GNU General Public License v3.0
-The git history of this repository includes boring.notch's history up to the
-point Hoverbird diverged, preserving its authors' attribution.
+Hoverbird was forked from boring.notch at commit b7611bb and has been modified
+since November 2026. The git history of this repository records every change
+and its date. It also keeps boring.notch's history up to that commit, preserving
+its authors' attribution.
 
 Hoverbird includes or adapts the following third-party software:
 
-  mediaremote-adapter            BSD 3-Clause    (c) 2025 Jonas van den Berg and contributors
+  mediaremote-adapter v0.7.0     BSD 3-Clause    (c) 2025 Jonas van den Berg and contributors
   Defaults                       MIT             (c) Sindre Sorhus
   KeyboardShortcuts              MIT             (c) Sindre Sorhus
   LaunchAtLogin-Modern           MIT             (c) Sindre Sorhus
@@ -26,6 +29,15 @@ Hoverbird includes or adapts the following third-party software:
   Parrot (CGSSpace)              MPL 2.0         (c) 2018 Aditya Vaidyam and contributors
 
 The full license texts are in THIRD_PARTY_LICENSES and in each Vendor/<module>/LICENSE.
+
+Prebuilt binaries: mediaremote-adapter/ contains compiled files
+(MediaRemoteAdapter.framework, MediaRemoteAdapterTestClient) and the
+mediaremote-adapter.pl script, taken unchanged from boring.notch commit 61487af
+(2025-08-14). They are mediaremote-adapter v0.7.0; the test client matches the
+next upstream commit, dc0eb4b, which only changes the test client's output.
+Their source code:
+  https://github.com/ungive/mediaremote-adapter/tree/dc0eb4bfd0aae1e5db574b249c656e3cbcee61f0
+Checksums and rebuild steps: mediaremote-adapter/SOURCE.md.
 
 Hoverbird is an independent project. It is not affiliated with or endorsed by
 Apple, Anthropic, OpenAI, Google or xAI. All product names are trademarks of

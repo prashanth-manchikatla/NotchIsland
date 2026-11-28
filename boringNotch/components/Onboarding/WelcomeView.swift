@@ -2,6 +2,8 @@
 //  WelcomeView.swift
 //  Hoverbird (based on boring.notch)
 //
+//  Originally created by Richard Kunkli on 2024-09-26 for boring.notch.
+//
 
 import SwiftUI
 

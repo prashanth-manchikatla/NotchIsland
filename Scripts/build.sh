@@ -144,6 +144,10 @@ cp "$ROOT"/Resources/Images/*.png "$APP/Contents/Resources/" 2>/dev/null || true
 cp "$ROOT/boringNotch/boring.m4a" "$APP/Contents/Resources/"
 cp "$ROOT/mediaremote-adapter/mediaremote-adapter.pl" "$APP/Contents/Resources/"
 ditto "$ROOT/mediaremote-adapter/MediaRemoteAdapterTestClient" "$APP/Contents/Resources/MediaRemoteAdapterTestClient"
+# License files ship inside every copy of the app: the GPL-3.0 text, Hoverbird's notices
+# and the third-party licenses (GPL-3.0 §4 and §6; the MIT and BSD licenses also need their
+# notices in binary copies). Settings › About shows them.
+cp "$ROOT/LICENSE" "$ROOT/NOTICE" "$ROOT/THIRD_PARTY_LICENSES" "$APP/Contents/Resources/"
 KS_BUNDLE="$APP/Contents/Resources/KeyboardShortcuts_KeyboardShortcuts.bundle"
 mkdir -p "$KS_BUNDLE"
 cp -R "$ROOT/Vendor/KeyboardShortcuts/Localization/"*.lproj "$KS_BUNDLE/"

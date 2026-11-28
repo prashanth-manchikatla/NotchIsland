@@ -46,7 +46,7 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Hoverbird — personal build based on boring.notch (GPL-3.0)</string>
+	<string>Copyright © 2026 prashanth-manchikatla. Based on boring.notch by TheBoredTeam. Licensed under the GNU GPL v3.0.</string>
 	<key>NSLocationUsageDescription</key>
 	<string>Hoverbird shows the weather for where you are in the Calendar section.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
