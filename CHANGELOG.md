@@ -66,6 +66,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Cinema: moving Netflix into the Theater started paused, at Netflix's own bookmark; it now continues at
   the same second, playing. The Theater no longer opens in Fit (its picture is the same as normal full
   screen), and picture modes no longer resize the trailer in a page's header.
+- AI Usage showed the Claude plan you signed in with (Pro after an upgrade to Max); the plan now comes from
+  the account profile Claude Code keeps current.
 
 ## [1.0.0-beta.1] — 2026-11-25
 

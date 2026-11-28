@@ -44,6 +44,10 @@ Keychain (`Claude Code-credentials`), Codex's in `~/.codex/auth.json`, Grok CLI'
 - never writes it to disk, logs it, or shows it;
 - never refreshes it (refreshing would rotate the CLI's sign-in and log it out).
 
+The Claude plan name (Pro, Max 5×, Max 20×…) comes from the account profile Claude Code keeps in
+`~/.claude.json`, because the sign-in still says the plan you had when you logged in. Hoverbird reads
+only the plan fields from that file.
+
 API keys you add in Settings are stored in the macOS Keychain and sent only to their provider.
 
 ## Permissions

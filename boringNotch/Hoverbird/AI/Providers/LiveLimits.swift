@@ -94,9 +94,11 @@ enum ClaudeLimits {
               let token = oauth["accessToken"] as? String, !token.isEmpty else {
             return (nil, problem ?? "Claude Code isn't signed in on this Mac.")
         }
-        let tier = (oauth["rateLimitTier"] as? String ?? "").lowercased()
-        var plan = (oauth["subscriptionType"] as? String)?.capitalized
-        if plan == "Max", tier.contains("20x") { plan = "Max 20×" } else if plan == "Max", tier.contains("5x") { plan = "Max 5×" }
+        // The sign-in keeps the plan from login time (Pro after an upgrade to Max): prefer the
+        // account profile Claude Code keeps current.
+        let profile = FileManager.default.contents(atPath: AIFiles.home.appendingPathComponent(".claude.json").path)
+        let plan = ClaudePlan.fromProfile(profile)
+            ?? ClaudePlan.name(type: oauth["subscriptionType"] as? String, tier: oauth["rateLimitTier"] as? String)
         return (Credentials(token: token, expires: AIDate.fromEpoch(oauth["expiresAt"]), plan: plan), nil)
     }
 
